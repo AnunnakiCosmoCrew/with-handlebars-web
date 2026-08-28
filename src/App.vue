@@ -206,9 +206,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         Every chord and scale tone, across the whole guitar neck, in any tuning — with
         your own spelling rules.
       </p>
+      <p class="site-footer-support">
+        Do you like With Handlebars?
+        <a class="support-link" href="https://ko-fi.com/cosmocrew" rel="noopener">♥ Support the crew</a>
+      </p>
       <p class="site-footer-fine">
         <a href="/about">About</a> · an
-        <a href="https://anunnakicosmocrew.github.io/" rel="noopener">Anunnaki Cosmo Crew</a>
+        <a href="https://cosmocrew.dev/" rel="noopener">Anunnaki Cosmo Crew</a>
         project ·
         <a href="mailto:contact@cosmocrew.dev">contact@cosmocrew.dev</a>
       </p>
@@ -341,6 +345,26 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
 .site-footer a {
   color: inherit;
+}
+
+.site-footer-support {
+  margin: 0.5rem 0 0.65rem;
+}
+
+.site-footer a.support-link {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.28rem 0.75rem;
+  border: 1px solid var(--hb-border);
+  border-radius: 999px;
+  background: var(--hb-surface);
+  color: var(--hb-accent);
+  text-decoration: none;
+}
+
+.site-footer a.support-link:hover,
+.site-footer a.support-link:focus-visible {
+  border-color: var(--hb-accent);
 }
 
 @media (max-width: 640px) {

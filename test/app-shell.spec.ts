@@ -28,7 +28,8 @@ describe('app shell', () => {
     const w = mountApp()
     const hrefs = w.get('.site-footer').findAll('a').map(a => a.attributes('href'))
     expect(hrefs).toContain('/about')
-    expect(hrefs).toContain('https://anunnakicosmocrew.github.io/')
+    expect(hrefs).toContain('https://cosmocrew.dev/')
+    expect(hrefs).toContain('https://ko-fi.com/cosmocrew')
     expect(hrefs).toContain('mailto:contact@cosmocrew.dev')
   })
 

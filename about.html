@@ -8,6 +8,7 @@
       name="description"
       content="With Handlebars is a tool for mastering scales and chords on the guitar — the whole neck at once, in any tuning. Built by the Anunnaki Cosmo Crew."
     />
+    <link rel="canonical" href="https://withhandlebars.com/about" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/src/style.css" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f8fa" />
@@ -18,8 +19,18 @@
       content="A tool for mastering scales and chords on the guitar, from the Anunnaki Cosmo Crew."
     />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://withhandlebars.com/about" />
     <meta property="og:site_name" content="With Handlebars" />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="https://withhandlebars.com/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The With Handlebars fretboard: every tone of A Pentatonic Minor across a 24-fret neck, each dot coloured by its role in the scale."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://withhandlebars.com/og.png" />
     <style>
       .page {
         min-height: 100vh;
@@ -174,6 +185,22 @@
         color: inherit;
       }
 
+      .site-footer a.support-link {
+        display: inline-block;
+        margin-left: 0.35rem;
+        padding: 0.28rem 0.75rem;
+        border: 1px solid var(--hb-border);
+        border-radius: 999px;
+        background: var(--hb-surface);
+        color: var(--hb-accent);
+        text-decoration: none;
+      }
+
+      .site-footer a.support-link:hover,
+      .site-footer a.support-link:focus-visible {
+        border-color: var(--hb-accent);
+      }
+
       @media (max-width: 640px) {
         .room-header {
           flex-direction: column;
@@ -249,6 +276,17 @@
           a student, a bandmate, or yourself next week.
         </p>
 
+        <h2>Why the name?</h2>
+        <p>
+          It&rsquo;s a nod to <em>Handlebars</em> by Flobots — a song about riding a bike
+          hands-free, about how far raw talent can coast with nobody steering, and where
+          that ends up. Guitar gets learned that way too: memorized grips, borrowed licks,
+          shapes that work right up until the song turns underneath you. This tool is the
+          opposite gesture. <strong>With</strong> handlebars means hands on the controls —
+          knowing why a shape works, where the next tone lives, and which way to lean when
+          the harmony moves. It&rsquo;s your journey through music; you do the steering.
+        </p>
+
         <h2>Who builds it</h2>
         <p>
           With Handlebars comes from the
@@ -265,6 +303,14 @@
           principles rather than lifted from anywhere — degrees, spellings, voicings and all
           — so the app only has to draw what the theory already knows.
         </p>
+        <p>
+          Both halves are <strong>open source</strong> under the MIT license:
+          <a href="https://github.com/AnunnakiCosmoCrew/with-handlebars" rel="noopener">with-handlebars</a>
+          is the theory core, and
+          <a href="https://github.com/AnunnakiCosmoCrew/with-handlebars-web" rel="noopener">with-handlebars-web</a>
+          is this app. Found a bug, or curious how the board thinks? The code is right
+          there.
+        </p>
 
         <div class="contact">
           <h2>Get in touch</h2>
@@ -280,8 +326,12 @@
 
       <footer class="site-footer">
         <p>
+          Do you like With Handlebars?
+          <a class="support-link" href="https://ko-fi.com/cosmocrew" rel="noopener">♥ Support the crew</a>
+        </p>
+        <p>
           <a href="/">With Handlebars</a> — an
-          <a href="https://anunnakicosmocrew.github.io/" rel="noopener">Anunnaki Cosmo Crew</a>
+          <a href="https://cosmocrew.dev/" rel="noopener">Anunnaki Cosmo Crew</a>
           project.
         </p>
         <p>

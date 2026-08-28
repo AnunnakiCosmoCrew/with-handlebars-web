@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "vue-tsc -b"
+    "typecheck": "vue-tsc -b",
+    "og": "tools/render-og.sh"
   },
   "dependencies": {
     "@anunnakicosmocrew/handlebars": "file:../with-handlebars",

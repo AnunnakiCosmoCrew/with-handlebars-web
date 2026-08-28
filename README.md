@@ -4,7 +4,7 @@
 see every occurrence of its tones across the whole neck — in any tuning, with
 strict enharmonic spelling, theory that shows its work, and sampled sound.
 
-Live at **[withhandlebars.pages.dev](https://withhandlebars.pages.dev)**.
+Live at **[withhandlebars.com](https://withhandlebars.com)**.
 
 ## What's in it
 
@@ -41,12 +41,25 @@ and restart the dev server.
 ```bash
 npm test        # component + store + audio test suite
 npm run build   # production build into dist/
+npm run og      # re-render public/og.png, the link-preview card
 ```
+
+The link-preview card is a screenshot of `og.html`, which draws the real
+fretboard with the real design tokens — so it is regenerated rather than
+hand-drawn whenever the board, the palette or the brand mark changes. It needs
+a Chrome-family browser and ImageMagick.
 
 Stack: Vite + Vue 3 + TypeScript, Pinia for state, a hand-rolled SVG fretboard,
 and [smplr](https://github.com/danigb/smplr) for sampled playback. No music
 theory is computed in this repo — if a component needs a theory answer, it
 belongs in the core.
+
+## Contributing
+
+Issues are the front door — and because every board is a URL, a bug report can
+be one link. See [CONTRIBUTING.md](CONTRIBUTING.md); it explains what to file
+where, and how patches reach this repo (it's a release mirror, so pull requests
+take a slightly unusual route).
 
 ## Credits
 
