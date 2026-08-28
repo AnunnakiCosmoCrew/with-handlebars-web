@@ -1,0 +1,96 @@
+/* Handlebars design tokens. Components consume var(--hb-*) only — the two
+   themes live entirely in this file. */
+
+:root {
+  --hb-bg: #f7f8fa;
+  --hb-surface: #ffffff;
+  --hb-surface-2: #eef0f4;
+  --hb-text: #16181d;
+  --hb-muted: #6d7381;
+  --hb-border: #d7dae0;
+  --hb-accent: #4f46e5;
+  --hb-accent-contrast: #ffffff;
+  --hb-active-bg: #e7e9fd;
+  --hb-control-bg: #ffffff;
+  --hb-altered: #dc2626;
+  --hb-overlay: #d97706;
+  --hb-good: #15803d;
+  --hb-shadow: rgba(20, 22, 35, 0.14);
+
+  /* fretboard */
+  --hb-board-line: #565b66;
+  --hb-nut: #1b1e26;
+  --hb-marker: #dfe2e8;
+  --hb-dot-root: #4f46e5;
+  --hb-dot-root-label: #ffffff;
+  --hb-dot-tone: #1f2430;
+  --hb-dot-tone-label: #ffffff;
+  --hb-optional-stroke: #1f2430;
+
+  /* tone-role tints (the root keeps --hb-dot-root) */
+  --hb-role-third: #0f766e;
+  --hb-role-fifth: #b45309;
+  --hb-role-seventh: #be185d;
+  --hb-role-extension: #0369a1;
+  --hb-role-label: #ffffff;
+
+  /* circle-of-fifths wedge lightness (hues are per-segment) */
+  --hb-cof-base-l: 90%;
+  --hb-cof-lit-l: 78%;
+  --hb-cof-active-l: 42%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --hb-bg: #101217;
+    --hb-surface: #181b22;
+    --hb-surface-2: #21252e;
+    --hb-text: #e7e9ee;
+    --hb-muted: #8d93a1;
+    --hb-border: #2c313c;
+    --hb-accent: #6366f1;
+    --hb-accent-contrast: #ffffff;
+    --hb-active-bg: #232848;
+    --hb-control-bg: #181b22;
+    --hb-altered: #f87171;
+    --hb-overlay: #fbbf24;
+    --hb-good: #4ade80;
+    --hb-shadow: rgba(0, 0, 0, 0.55);
+
+    --hb-board-line: #7d8494;
+    --hb-nut: #d7dae2;
+    --hb-marker: #363c48;
+    --hb-dot-root: #818cf8;
+    --hb-dot-root-label: #101217;
+    --hb-dot-tone: #e3e6ee;
+    --hb-dot-tone-label: #181b22;
+    --hb-optional-stroke: #e3e6ee;
+
+    --hb-role-third: #5eead4;
+    --hb-role-fifth: #fb923c;
+    --hb-role-seventh: #f9a8d4;
+    --hb-role-extension: #7dd3fc;
+    --hb-role-label: #101217;
+
+    --hb-cof-base-l: 22%;
+    --hb-cof-lit-l: 33%;
+    --hb-cof-active-l: 48%;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--hb-bg);
+  color: var(--hb-text);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
