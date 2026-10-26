@@ -2,6 +2,13 @@
    themes live entirely in this file. */
 
 :root {
+  /* Tells the browser which theme its own controls are drawn in. A <button> does
+     not inherit `color`: it takes the browser's button text colour, which stays
+     black unless the page says it is dark. Without this line every button that
+     sets a background but no colour came out black on the dark surface (HB-176).
+     The dark block below flips it with the tokens. */
+  color-scheme: light;
+
   --hb-bg: #f7f8fa;
   --hb-surface: #ffffff;
   --hb-surface-2: #eef0f4;
@@ -79,6 +86,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    color-scheme: dark;
+
     --hb-bg: #101217;
     --hb-surface: #181b22;
     --hb-surface-2: #21252e;
