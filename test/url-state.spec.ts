@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_STATE, buildQuery, parseQuery, type RoomState } from '../src/lib/url-state.js'
+import {
+  DEFAULT_STATE,
+  buildLensQuery,
+  buildQuery,
+  parseLocation,
+  parseQuery,
+  stateLocation,
+  type RoomState,
+} from '../src/lib/url-state.js'
+import { BOARDS, boardFromPath, boardPath } from '../src/lib/board-path.js'
 
 const state = (over: Partial<RoomState> = {}): RoomState => ({ ...DEFAULT_STATE, ...over })
 
@@ -283,5 +292,86 @@ describe('parseQuery', () => {
     expect(parseQuery('tempo=39')).toEqual({})
     expect(parseQuery('tempo=241')).toEqual({})
     expect(parseQuery('tempo=fast')).toEqual({})
+  })
+})
+
+// HB-153: a tier-1 board has a page of its own, and its path names the board.
+describe('board paths', () => {
+  it('round-trips every tier-1 board through its path', () => {
+    expect(BOARDS).toHaveLength(432)
+    for (const board of BOARDS) expect(boardFromPath(boardPath(board)!)).toEqual(board)
+  })
+
+  it('reads a path with or without its trailing slash, and as the file the build writes', () => {
+    const am7 = { tuningId: 'standard', root: 'A', mode: 'chord', typeId: 'm7' }
+    expect(boardFromPath('/standard/a/chord/minor-7/')).toEqual(am7)
+    expect(boardFromPath('/standard/a/chord/minor-7')).toEqual(am7)
+    expect(boardFromPath('/standard/a/chord/minor-7/index.html')).toEqual(am7)
+    expect(boardFromPath('/standard/c-sharp/scale/melodic-minor/')).toEqual({
+      tuningId: 'standard',
+      root: 'C#',
+      mode: 'scale',
+      typeId: 'melodic-minor-ascending',
+    })
+  })
+
+  it('names nothing for paths outside the inventory', () => {
+    for (const path of [
+      '/',
+      '/about',
+      '/standard/',
+      '/standard/a/chord/m7/', // a core id, never a slug
+      '/standard/d-flat/chord/minor-7/', // the twin of a published root
+      '/drop-d/a/chord/minor-7/', // not a tier-1 tuning yet
+      '/standard/a/scale/minor-7/', // a chord slug under scale
+      '/Standard/A/chord/minor-7/',
+      '/standard/a/chord/minor-7/extra/',
+    ])
+      expect(boardFromPath(path), path).toBeNull()
+  })
+
+  it('has no path for a board outside the inventory', () => {
+    expect(boardPath({ tuningId: 'standard', root: 'Db', mode: 'chord', typeId: 'm7' })).toBeNull()
+    expect(boardPath({ tuningId: 'drop-d', root: 'A', mode: 'chord', typeId: 'm7' })).toBeNull()
+    expect(boardPath({ tuningId: 'standard', root: 'A', mode: 'chord', typeId: 'm11' })).toBeNull()
+  })
+})
+
+describe('parseLocation', () => {
+  it('takes the board from the path and the rest from the query', () => {
+    expect(parseLocation('/standard/e/scale/dorian/', '?root=C&chord=m7&frets=24')).toMatchObject({
+      mode: 'scale',
+      root: 'E',
+      scaleId: 'dorian',
+      tuningId: 'standard',
+      fretCount: 24,
+    })
+  })
+
+  it('falls back to the query anywhere else', () => {
+    expect(parseLocation('/', '?root=A&chord=m7')).toEqual(parseQuery('?root=A&chord=m7'))
+    expect(parseLocation('/drop-d/a/chord/minor-7/', '?root=G')).toEqual({ root: 'G' })
+  })
+})
+
+describe('stateLocation', () => {
+  it('is the board path with the lenses as a query for a tier-1 board', () => {
+    expect(stateLocation(state({ root: 'A', chordId: 'm7' }))).toBe('/standard/a/chord/minor-7/')
+    expect(stateLocation(state({ root: 'A', chordId: 'm7', octaves: 'on', fretCount: 24 }))).toBe(
+      '/standard/a/chord/minor-7/?frets=24&octaves=on',
+    )
+  })
+
+  it('is the room with the whole state in the query otherwise', () => {
+    expect(stateLocation(state({ root: 'A', chordId: 'm7', tuningId: 'drop-d' }))).toBe(
+      '/?root=A&chord=m7&tuning=drop-d',
+    )
+    expect(stateLocation(state({ root: 'Db' }), '/index.html')).toBe('/index.html?root=Db')
+  })
+
+  it('leaves the board fields out of the lens query', () => {
+    expect(buildLensQuery(state({ mode: 'scale', root: 'A', scaleId: 'dorian', staff: 'hide' }))).toBe(
+      'staff=hide',
+    )
   })
 })

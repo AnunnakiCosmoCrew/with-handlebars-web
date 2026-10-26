@@ -2,20 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>With Handlebars — Guitar Fretboard Explorer</title>
     <meta
       name="description"
-      content="See every chord and scale tone across the whole guitar fretboard — 58 chord qualities, 168 scales, 23 tunings, strict enharmonic spelling, and sampled playback."
+      content="See every chord and scale tone across the whole fretboard — 58 chord qualities, 168 scales, 30 tunings for guitar, bass, and ukulele, strict enharmonic spelling, and sampled playback."
     />
     <link rel="canonical" href="https://withhandlebars.com/" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Safari's Smart App Banner (HB-145): the app icon and a View / Open button at the
+         top of the page on iPhone and iPad. Safari-only, so it never paints inside the
+         WKWebView. The id is the listing's; test/smart-app-banner.spec.ts keeps the two
+         in step. -->
+    <meta name="apple-itunes-app" content="app-id=6815550767" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f8fa" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101217" />
     <meta property="og:title" content="With Handlebars — Guitar Fretboard Explorer" />
     <meta
       property="og:description"
-      content="Every chord and scale tone across the whole guitar fretboard, in any tuning."
+      content="Every chord and scale tone across the whole guitar, bass, or ukulele fretboard, in any tuning."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://withhandlebars.com/" />
@@ -42,13 +52,24 @@
         "operatingSystem": "Any",
         "browserRequirements": "Requires JavaScript",
         "isAccessibleForFree": true,
-        "description": "A tool for mastering scales and chords on the guitar: every chord and scale tone across the whole fretboard — 58 chord qualities, 168 scales, 23 tunings, strict enharmonic spelling, and sampled playback.",
-        "keywords": "guitar, fretboard, chords, scales, music theory, tunings, practice",
+        "description": "A tool for mastering scales and chords on the guitar, bass, and ukulele: every chord and scale tone across the whole fretboard — 58 chord qualities, 168 scales, 30 tunings for guitar, bass, and ukulele, strict enharmonic spelling, and sampled playback.",
+        "keywords": "guitar, bass, ukulele, fretboard, chords, scales, music theory, tunings, practice",
         "creator": {
           "@type": "Organization",
-          "name": "Anunnaki Cosmo Crew",
+          "name": "CosmoCrew",
           "url": "https://cosmocrew.dev/"
-        }
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Luvita Teknoloji Ltd. Şti.",
+          "url": "https://luvita.tr/"
+        },
+        "copyrightHolder": {
+          "@type": "Organization",
+          "name": "Luvita Teknoloji Ltd. Şti.",
+          "url": "https://luvita.tr/"
+        },
+        "copyrightYear": 2026
       }
     </script>
   </head>
@@ -57,11 +78,16 @@
     <noscript>
       <h1>With Handlebars — guitar scales &amp; chords</h1>
       <p>
-        With Handlebars is a tool for mastering scales and chords on the guitar. It shows
+        With Handlebars is a tool for mastering scales and chords on the guitar, bass, and ukulele. It shows
         every chord and scale tone across the whole fretboard — 58 chord qualities, 168
-        scales, and 23 tunings, with strict enharmonic spelling and sampled playback. The
+        scales, and 30 tunings, with strict enharmonic spelling and sampled playback. The
         fretboard is an interactive app and needs JavaScript to run;
-        <a href="/about">read about With Handlebars</a> without it.
+        <a href="about.html">read about With Handlebars</a> or
+        <a href="/boards/">browse every chord and scale board</a> without it.
+      </p>
+      <p>
+        © 2026 CosmoCrew — a brand of
+        <a href="https://luvita.tr/" rel="noopener">Luvita Teknoloji Ltd. Şti.</a>
       </p>
     </noscript>
     <script type="module" src="/src/main.ts"></script>

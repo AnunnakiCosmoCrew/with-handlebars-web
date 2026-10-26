@@ -13,6 +13,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# shellcheck source=tools/render-lib.sh
+. tools/render-lib.sh
+
 QUERY="${1:-}"
 OUT="${OUT:-public/og.png}"
 PORT="${PORT:-5199}"
@@ -61,14 +64,11 @@ done
 # preferredColorScheme=0 is Blink's "dark": the card is the dark theme whatever
 # the machine rendering it prefers. Shoot at 2x and downsample — text and dot
 # labels come out far cleaner than a native-resolution grab.
-"$CHROME" --headless --disable-gpu --hide-scrollbars \
+shoot_png "$TMP/card@2x.png" \
   --window-size=1200,630 --force-device-scale-factor=2 \
   --blink-settings=preferredColorScheme=0 \
   --virtual-time-budget=10000 \
-  --screenshot="$TMP/card@2x.png" \
-  "http://localhost:$PORT/og.html?$QUERY" >/dev/null 2>&1
-
-[ -s "$TMP/card@2x.png" ] || { echo "the browser produced no screenshot" >&2; exit 1; }
+  "http://localhost:$PORT/og.html?$QUERY"
 
 magick "$TMP/card@2x.png" -resize 1200x630 -strip \
   -define png:compression-level=9 "$OUT"

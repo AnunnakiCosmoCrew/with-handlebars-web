@@ -1,0 +1,303 @@
+{
+  "$comment": "Tier-1 pre-rendered board pages (HB-150, handlebars-docs ADR-0009). Single source for the generator, the sitemap and the client's path reflection. Maps are slug -> core id; core ids never appear in paths. Pages are /<tuning>/<root>/<kind>/<type>/. Expansion (more tunings, types, families) waits for Search Console impressions.",
+  "tunings": [
+    {
+      "slug": "standard",
+      "id": "standard"
+    }
+  ],
+  "roots": [
+    {
+      "slug": "c",
+      "root": "C"
+    },
+    {
+      "slug": "c-sharp",
+      "root": "C#"
+    },
+    {
+      "slug": "d",
+      "root": "D"
+    },
+    {
+      "slug": "e-flat",
+      "root": "Eb"
+    },
+    {
+      "slug": "e",
+      "root": "E"
+    },
+    {
+      "slug": "f",
+      "root": "F"
+    },
+    {
+      "slug": "f-sharp",
+      "root": "F#"
+    },
+    {
+      "slug": "g",
+      "root": "G"
+    },
+    {
+      "slug": "a-flat",
+      "root": "Ab"
+    },
+    {
+      "slug": "a",
+      "root": "A"
+    },
+    {
+      "slug": "b-flat",
+      "root": "Bb"
+    },
+    {
+      "slug": "b",
+      "root": "B"
+    }
+  ],
+  "chords": [
+    {
+      "slug": "major",
+      "id": "major"
+    },
+    {
+      "slug": "minor",
+      "id": "minor"
+    },
+    {
+      "slug": "power",
+      "id": "5"
+    },
+    {
+      "slug": "dominant-7",
+      "id": "7"
+    },
+    {
+      "slug": "major-7",
+      "id": "maj7"
+    },
+    {
+      "slug": "minor-7",
+      "id": "m7"
+    },
+    {
+      "slug": "minor-major-7",
+      "id": "mmaj7"
+    },
+    {
+      "slug": "6",
+      "id": "6"
+    },
+    {
+      "slug": "minor-6",
+      "id": "m6"
+    },
+    {
+      "slug": "add-9",
+      "id": "add9"
+    },
+    {
+      "slug": "sus-2",
+      "id": "sus2"
+    },
+    {
+      "slug": "sus-4",
+      "id": "sus4"
+    },
+    {
+      "slug": "7-sus-4",
+      "id": "7sus4"
+    },
+    {
+      "slug": "9",
+      "id": "9"
+    },
+    {
+      "slug": "major-9",
+      "id": "maj9"
+    },
+    {
+      "slug": "minor-9",
+      "id": "m9"
+    },
+    {
+      "slug": "11",
+      "id": "11"
+    },
+    {
+      "slug": "13",
+      "id": "13"
+    },
+    {
+      "slug": "7-sharp-9",
+      "id": "7s9"
+    },
+    {
+      "slug": "7-flat-9",
+      "id": "7b9"
+    },
+    {
+      "slug": "diminished",
+      "id": "dim"
+    },
+    {
+      "slug": "diminished-7",
+      "id": "dim7"
+    },
+    {
+      "slug": "minor-7-flat-5",
+      "id": "m7b5"
+    },
+    {
+      "slug": "augmented",
+      "id": "aug"
+    }
+  ],
+  "scales": [
+    {
+      "slug": "major",
+      "id": "major"
+    },
+    {
+      "slug": "pentatonic-minor",
+      "id": "pentatonic-minor"
+    },
+    {
+      "slug": "pentatonic-major",
+      "id": "pentatonic-major"
+    },
+    {
+      "slug": "blues",
+      "id": "blues"
+    },
+    {
+      "slug": "harmonic-minor",
+      "id": "harmonic-minor"
+    },
+    {
+      "slug": "melodic-minor",
+      "id": "melodic-minor-ascending"
+    },
+    {
+      "slug": "dorian",
+      "id": "dorian"
+    },
+    {
+      "slug": "phrygian",
+      "id": "phrygian"
+    },
+    {
+      "slug": "lydian",
+      "id": "lydian"
+    },
+    {
+      "slug": "mixolydian",
+      "id": "mixolydian"
+    },
+    {
+      "slug": "aeolian",
+      "id": "aeolian"
+    },
+    {
+      "slug": "locrian",
+      "id": "locrian"
+    }
+  ],
+  "families": {
+    "chord": [
+      {
+        "slug": "triads",
+        "name": "Triads",
+        "types": [
+          "major",
+          "minor",
+          "dim",
+          "aug"
+        ]
+      },
+      {
+        "slug": "power-and-suspended",
+        "name": "Power and suspended chords",
+        "types": [
+          "5",
+          "sus2",
+          "sus4",
+          "7sus4"
+        ]
+      },
+      {
+        "slug": "sixths-and-added",
+        "name": "Sixth and added-note chords",
+        "types": [
+          "6",
+          "m6",
+          "add9"
+        ]
+      },
+      {
+        "slug": "sevenths",
+        "name": "Seventh chords",
+        "types": [
+          "7",
+          "maj7",
+          "m7",
+          "mmaj7",
+          "dim7",
+          "m7b5"
+        ]
+      },
+      {
+        "slug": "extended",
+        "name": "Extended chords",
+        "types": [
+          "9",
+          "maj9",
+          "m9",
+          "11",
+          "13"
+        ]
+      },
+      {
+        "slug": "altered",
+        "name": "Altered dominants",
+        "types": [
+          "7s9",
+          "7b9"
+        ]
+      }
+    ],
+    "scale": [
+      {
+        "slug": "major-and-modes",
+        "name": "The major scale and its modes",
+        "types": [
+          "major",
+          "dorian",
+          "phrygian",
+          "lydian",
+          "mixolydian",
+          "aeolian",
+          "locrian"
+        ]
+      },
+      {
+        "slug": "pentatonic-and-blues",
+        "name": "Pentatonic and blues scales",
+        "types": [
+          "pentatonic-minor",
+          "pentatonic-major",
+          "blues"
+        ]
+      },
+      {
+        "slug": "minor-scales",
+        "name": "Harmonic and melodic minor",
+        "types": [
+          "harmonic-minor",
+          "melodic-minor-ascending"
+        ]
+      }
+    ]
+  }
+}

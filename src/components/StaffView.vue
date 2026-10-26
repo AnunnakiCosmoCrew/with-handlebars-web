@@ -112,7 +112,9 @@ const caption = computed(() => {
       }: ${spots.join(' · ')}`
     }
   }
-  return 'Click a note — or any spot on the board — to pin a pitch.'
+  // Pointer-neutral on purpose: one build serves the desk and the thumb, so
+  // the caption cannot name a mouse (UX-15).
+  return 'Choose a note — or any spot on the board — to pin a pitch.'
 })
 </script>
 

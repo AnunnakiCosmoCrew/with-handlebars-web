@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>App icon — With Handlebars</title>
+    <meta name="robots" content="noindex" />
+    <!--
+      The source of the iOS app icon. Dev-only: it is deliberately absent from
+      vite.config.ts's build inputs, so it never ships. Render it with
+      tools/render-icon.sh.
+    -->
+    <style>
+      /* The screenshot is the whole viewport, so the plate has to reach the
+         edges — the browser's default body margin would gutter it. */
+      html,
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="icon"></div>
+    <script type="module" src="/src/icon/main.ts"></script>
+  </body>
+</html>

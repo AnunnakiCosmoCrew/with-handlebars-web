@@ -16,6 +16,10 @@
   --hb-overlay: #d97706;
   --hb-good: #15803d;
   --hb-shadow: rgba(20, 22, 35, 0.14);
+  /* The status-bar strip: the page background, thinned so the blur behind it
+     has something to do. rgba rather than a color-mix() of --hb-bg because
+     color-mix landed in Safari 16.2 and ADR-0003 puts the floor at 15.0. */
+  --hb-scrim: rgba(247, 248, 250, 0.72);
 
   /* fretboard */
   --hb-board-line: #565b66;
@@ -38,6 +42,39 @@
   --hb-cof-base-l: 90%;
   --hb-cof-lit-l: 78%;
   --hb-cof-active-l: 42%;
+
+  /* The smallest thing a finger should have to hit — Apple's HIG minimum, and
+     roughly a fingertip contact patch. Spent by the coarse-pointer layer at the
+     end of this file, never by a component on its own. */
+  --hb-tap-min: 44px;
+
+  /* The floor for a chip — the one- and two-character buttons of the lens,
+     position and practice rows, which have no text to hold them open. A token
+     rather than a repeated 2.1rem because the coarse-pointer layer below
+     raises it, and a scoped rule would outrank that layer. */
+  --hb-chip-min: 2.1rem;
+
+  /* Device geometry, not theme — the dark block below never re-declares these.
+     Zero on the website and on unobstructed screens; non-zero only where the OS
+     says something is in the way, and only once a page asks for the whole
+     screen with viewport-fit=cover. */
+  --hb-safe-top: env(safe-area-inset-top, 0px);
+  --hb-safe-right: env(safe-area-inset-right, 0px);
+  --hb-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --hb-safe-left: env(safe-area-inset-left, 0px);
+
+  /* A floating panel is positioned against its trigger, which on a narrow
+     screen can sit anywhere on a wrapped row — so its width is capped against
+     the window, not against the trigger. The insets come off because .page is
+     already padded by them: on the notch side that width is unusable. Geometry
+     again, so the dark block never re-declares it.
+
+     The 32px is two 16px gutters, and has to stay in px: PANEL_GUTTER in
+     useFloatingPanel.ts is the same gap measured from the other side, and a rem
+     here would drift from it with the root font size — a cap wider than the two
+     gutters lets a panel sized to it overflow the edge the clamp just cleared.
+     floating-panel.spec.ts holds the two numbers together. */
+  --hb-panel-max-width: calc(100vw - var(--hb-safe-left) - var(--hb-safe-right) - 32px);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -56,6 +93,7 @@
     --hb-overlay: #fbbf24;
     --hb-good: #4ade80;
     --hb-shadow: rgba(0, 0, 0, 0.55);
+    --hb-scrim: rgba(16, 18, 23, 0.72);
 
     --hb-board-line: #7d8494;
     --hb-nut: #d7dae2;
@@ -93,4 +131,139 @@ body {
   color: var(--hb-text);
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* The status-bar backdrop (UX-14). viewport-fit=cover hands the page the whole
+   screen, including the strip the clock and the battery sit on, and the page
+   scrolls under it: in dark mode the clock lands on top of whatever has scrolled
+   up to meet it. This is the frosted strip that puts the OS back on its own
+   ground.
+
+   Both pages get it from here rather than each declaring its own — index.html
+   renders App.vue, about.html links this stylesheet, and both wrap everything in
+   .page. A pseudo-element, so neither needs new markup.
+
+   No media query and no platform check: --hb-safe-top is 0px on the website, on
+   an iPad and on any phone without a notch, so the strip is zero-height
+   everywhere it is not wanted. Fixed rather than sticky because the page behind
+   it is what moves, and z-index above the room but below the floating panels
+   (which sit at 40) — a dropdown that reached the status bar should still be
+   readable there. */
+.page::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto;
+  height: var(--hb-safe-top);
+  background: var(--hb-scrim);
+  /* -webkit- first: the unprefixed property is what modern WebKit reads, and
+     the prefixed one is what the iOS 15.0 floor (ADR-0003) still needs. */
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  backdrop-filter: saturate(180%) blur(12px);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Touch sizing. The room's controls are sized by padding alone and land
+   between 30 and 34 px — under a fingertip everywhere. Rather than teach every
+   component two sizes, the floor lives here as one layer, and it is keyed on
+   the *pointer* rather than the viewport: a desktop window dragged to phone
+   width keeps its density, and an iPad in landscape still gets the floor.
+
+   The layer only ever grows a box — a minimum size, and the centring a minimum
+   needs. Colour, border, font and spacing stay with the component. A control
+   added later joins by putting its selector in this block; hard-coding 44px in
+   a scoped style is how the two sizes come back (ADR-0006). */
+@media (pointer: coarse) {
+  /* Chips hold one or two characters — "All", "3", "·" — so height on its own
+     leaves them a sliver wide. Raised through the token, because the chips
+     declare their width in scoped rules and a scoped rule carries the
+     component's data attribute: it outranks anything this layer says directly. */
+  :root {
+    --hb-chip-min: var(--hb-tap-min);
+  }
+
+  .mode-toggle button,
+  .combo-button,
+  .combo-search,
+  .tuning-header,
+  .display-button,
+  .share-button,
+  .overlay-select,
+  .play-button,
+  .lens-btn,
+  .position-btn,
+  .ccard-head,
+  [role='option'] {
+    min-height: var(--hb-tap-min);
+  }
+
+  /* Share and Display shed their words on a narrow screen (HB-86) and are an
+     icon in a box from there down — ~37px wide, which a height floor alone
+     does not catch. Width as well as height, here rather than in the two
+     components, for the reason the block above gives. */
+  .share-button,
+  .display-button {
+    min-width: var(--hb-tap-min);
+    justify-content: center;
+  }
+
+  /* Range inputs: the thumb is fat on iOS but the grab area is the element,
+     and the element is the 16 px track. */
+  input[type='range'] {
+    min-height: var(--hb-tap-min);
+  }
+
+  /* Display panel: a 13 px radio beside 19 px of label was the whole target.
+     inline-flex, so the two options of a fieldset stay side by side and the
+     panel grows by rows rather than by columns. */
+  .display-panel label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: var(--hb-tap-min);
+  }
+
+  /* Footer links (both the room and about.html). inline-flex keeps the box's
+     baseline where it was, so the box grows around the link without moving the
+     sentence it sits in. */
+  .site-footer a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--hb-tap-min);
+  }
+}
+
+/* A board page's own text (HB-153): the H1, entity paragraph and neighbour links
+   the generator writes into the served HTML, below the room. It reads as a short
+   reference card for the board, and is what a crawler or a reader without
+   JavaScript gets. */
+.board-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem calc(1rem + var(--hb-safe-right)) calc(2rem + var(--hb-safe-bottom))
+    calc(1rem + var(--hb-safe-left));
+  line-height: 1.5;
+}
+
+.board-page h1 {
+  font-size: 1.35rem;
+  margin: 0 0 0.75rem;
+}
+
+.board-page h2 {
+  font-size: 1rem;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.board-page ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.board-page a {
+  color: var(--hb-accent);
 }

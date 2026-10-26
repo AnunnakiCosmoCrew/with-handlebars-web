@@ -1,9 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { useRoomStore } from '../src/stores/room.js'
 import { usePracticeStore } from '../src/stores/practice.js'
 import PracticePanel from '../src/components/PracticePanel.vue'
+import { hapticsEnabled } from '../src/lib/haptics.js'
+
+vi.mock('@capacitor/haptics', () => ({
+  Haptics: { impact: vi.fn(async () => {}), notification: vi.fn(async () => {}) },
+  ImpactStyle: { Heavy: 'HEAVY', Medium: 'MEDIUM', Light: 'LIGHT' },
+  NotificationType: { Success: 'SUCCESS', Warning: 'WARNING', Error: 'ERROR' },
+}))
 
 vi.mock('../src/audio/engine.js', async importOriginal => {
   const mod = await importOriginal<typeof import('../src/audio/engine.js')>()
@@ -38,10 +45,23 @@ vi.mock('../src/audio/practice.js', async importOriginal => {
   }
 })
 
+/** Stand in for the bridge the iOS shell injects before the page is parsed. */
+const stubNativeShell = () => {
+  Object.assign(window, {
+    Capacitor: { getPlatform: () => 'ios', isNativePlatform: () => true },
+  })
+}
+
 beforeEach(() => {
   localStorage.clear()
   history.replaceState(null, '', '/')
   setActivePinia(createPinia())
+  // The preference is a module-level ref, so it outlives a single mount.
+  hapticsEnabled.value = true
+})
+
+afterEach(() => {
+  Reflect.deleteProperty(window, 'Capacitor')
 })
 
 describe('PracticePanel', () => {
@@ -183,5 +203,34 @@ describe('PracticePanel', () => {
     practice.tapTempo(400)
     practice.tapTempo(800)
     expect(store.tempo).toBe(150)
+  })
+
+  it('keeps the buzz toggle off the website, where nothing can buzz', async () => {
+    const store = useRoomStore()
+    const w = mount(PracticePanel)
+    store.practice = 'quiz'
+    await w.vm.$nextTick()
+    expect(w.find('[data-metronome]').exists()).toBe(true)
+    expect(w.find('[data-haptics]').exists()).toBe(false)
+  })
+
+  it('offers the buzz toggle in the app and remembers it being turned off', async () => {
+    stubNativeShell()
+    const store = useRoomStore()
+    const w = mount(PracticePanel)
+    store.practice = 'quiz'
+    await w.vm.$nextTick()
+
+    const toggle = w.find('[data-haptics]')
+    expect(toggle.exists()).toBe(true)
+    expect(toggle.attributes('aria-pressed')).toBe('true') // on by default
+
+    await toggle.trigger('click')
+    expect(hapticsEnabled.value).toBe(false)
+    expect(w.find('[data-haptics]').attributes('aria-pressed')).toBe('false')
+    expect(localStorage.getItem('handlebars.haptics.v1')).toBe('off')
+
+    await w.find('[data-haptics]').trigger('click')
+    expect(hapticsEnabled.value).toBe(true)
   })
 })

@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { useRoomStore } from '../src/stores/room.js'
 import CircleOfFifths from '../src/components/CircleOfFifths.vue'
+import { withNarrowViewport } from './match-media.js'
 
 beforeEach(() => {
   localStorage.clear()
@@ -98,5 +99,40 @@ describe('CircleOfFifths', () => {
     store.circle = 'hide'
     await w.vm.$nextTick()
     expect(w.find('.circle-panel').exists()).toBe(false)
+  })
+
+  it('trades the mini staves for a bigger wheel on a phone', () => {
+    useRoomStore()
+    const box = (w: VueWrapper) =>
+      w.find('.circle-svg').attributes('viewBox')!.split(' ').map(Number) as number[]
+
+    const full = mount(CircleOfFifths)
+    expect(box(full)).toEqual([0, 0, 470, 470])
+    expect(full.findAll('[data-circle-sig]')).toHaveLength(12)
+
+    withNarrowViewport(() => {
+      const phone = mount(CircleOfFifths)
+      // the staves go, and the width they reserved goes back to the wedges:
+      // the tighter viewBox is what enlarges every name on the wheel
+      expect(phone.findAll('[data-circle-sig]')).toHaveLength(0)
+      const [x, y, w, h] = box(phone) as [number, number, number, number]
+      expect(w).toBeLessThan(470)
+      expect(h).toBe(w)
+      // still centred on the wheel, and still holding all of it
+      expect(x + w / 2).toBe(235)
+      expect(y + h / 2).toBe(235)
+      expect(w / 2).toBeGreaterThan(165) // the outer wedge radius
+      // both rings are still there to tap
+      expect(phone.findAll('[data-circle-major]')).toHaveLength(12)
+      expect(phone.findAll('[data-circle-minor]')).toHaveLength(12)
+      expect(phone.find('.circle-svg').classes()).toContain('circle-compact')
+    })
+  })
+
+  it('names the gesture without naming a mouse', () => {
+    useRoomStore()
+    const label = mount(CircleOfFifths).find('.circle-svg').attributes('aria-label')!
+    expect(label).toContain('Circle of fifths')
+    expect(label.toLowerCase()).not.toContain('click')
   })
 })

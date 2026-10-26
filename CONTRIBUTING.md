@@ -69,6 +69,16 @@ House style, briefly:
   in the store that reads it.
 - Tests accompany behavior changes. The suite is fast; there is no excuse.
 
+## iOS-specific patches
+
+`ios/` patches build and run in the Simulator the same way the README
+describes — no signing needed for that.
+
+What you can't do from this mirror: produce a signed archive or ship to
+TestFlight/the App Store. That material is intentionally excluded here. If a
+patch needs verifying against real hardware or a release build, say so in the
+PR — it'll get tested upstream before the next sync.
+
 ## Scope
 
 The project favors **algorithmic generality over curated systems** — position

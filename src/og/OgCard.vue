@@ -7,14 +7,17 @@ import {
   type Selection,
   type ToneRole,
 } from '@anunnakicosmocrew/handlebars'
+import BrandMark from '../BrandMark.vue'
 import Fretboard from '../components/Fretboard.vue'
-import { DEFAULT_STATE, parseQuery, type RoomState } from '../lib/url-state.js'
+import { boardFromPath } from '../lib/board-path.js'
+import { DEFAULT_STATE, boardState, parseQuery, type RoomState } from '../lib/url-state.js'
 
 /**
  * The link-preview card (og:image), drawn with the room's own Fretboard and
  * design tokens so the picture can never drift from the product. The query
  * string picks what the board shows — tools/render-og.sh screenshots this page
- * at 1200x630 and writes public/og.png.
+ * at 1200x630 and writes public/og.png, and the build renders one per board
+ * page (tools/og-cards-plugin.ts, HB-155).
  */
 
 /** Where the card starts before any query — the site's own calling card. */
@@ -31,12 +34,26 @@ const CARD_DEFAULTS: RoomState = {
 // our own: any shareable room link (?root=E&chord=maj7) renders a card of
 // exactly what the sender saw, with the same validation on the way in.
 const search = typeof location === 'undefined' ? '' : location.search
-const state: RoomState = { ...CARD_DEFAULTS, ...parseQuery(search) }
+const query = new URLSearchParams(search)
+
+// A board page's card names its page: `?board=/standard/a/chord/minor-7/` is
+// read with the room's own path mapping, so the card shows exactly the board
+// the page does, and a path outside the inventory falls back to the query.
+const board = boardFromPath(query.get('board') ?? '')
+const state: RoomState = {
+  ...CARD_DEFAULTS,
+  ...parseQuery(search),
+  ...(board ? boardState(board) : {}),
+}
+
+// `size=wide` is the 16:9 frame (1200x675) Discover takes for a large preview;
+// the default is Open Graph's 1200x630.
+const wide = query.get('size') === 'wide'
 
 // One flag needs help: the room defaults tone-role colour off and so only ever
 // parses `roles=on`, while the card defaults it on. Read the off switch here so
 // an uncoloured board stays reachable from a card query.
-if (new URLSearchParams(search).get('roles') === 'off') state.roles = 'off'
+if (query.get('roles') === 'off') state.roles = 'off'
 
 const selection: Selection = {
   mode: state.mode,
@@ -75,14 +92,9 @@ const legend = ROLE_ORDER.filter(r => present.has(r)).map(r => ({ role: r, text:
 </script>
 
 <template>
-  <div class="card">
+  <div class="card" :class="{ wide }">
     <header>
-      <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
-        <line x1="4" y1="32" x2="60" y2="32" stroke="var(--hb-board-line)" stroke-width="4" />
-        <line x1="11" y1="10" x2="11" y2="54" stroke="var(--hb-board-line)" stroke-width="6" />
-        <circle cx="30" cy="32" r="11" fill="var(--hb-accent)" />
-        <circle cx="50" cy="32" r="7.5" fill="var(--hb-dot-tone)" />
-      </svg>
+      <BrandMark class="mark" />
       <div class="wordmark">
         <h1>With Handlebars</h1>
         <p class="tagline">guitar scales &amp; chords</p>
@@ -114,7 +126,7 @@ const legend = ROLE_ORDER.filter(r => present.has(r)).map(r => ({ role: r, text:
     </div>
 
     <footer>
-      <span>58 chord qualities · 168 scales · 23 tunings · notation · playback</span>
+      <span>58 chord qualities · 168 scales · 30 tunings · notation · playback</span>
       <span class="domain">withhandlebars.com</span>
     </footer>
   </div>
@@ -138,6 +150,10 @@ const legend = ROLE_ORDER.filter(r => present.has(r)).map(r => ({ role: r, text:
     var(--hb-bg);
   color: var(--hb-text);
   overflow: hidden;
+}
+
+.card.wide {
+  height: 675px;
 }
 
 header {

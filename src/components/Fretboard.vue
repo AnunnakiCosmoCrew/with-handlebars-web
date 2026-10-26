@@ -17,6 +17,7 @@ import {
   type Handedness,
   type StringOrder,
 } from './fretboard-geometry.js'
+import { COARSE_POINTER, useMediaQuery } from '../lib/media.js'
 
 const props = withDefaults(
   defineProps<{
@@ -47,8 +48,11 @@ const props = withDefaults(
     roles?: Map<string, ToneRole> | null
     /** Quiz mode: blank every dot label so the board keeps its secrets. */
     hideLabels?: boolean
-    /** Quiz reveal: dashed rings at these positions (dots there or not). */
-    marks?: { string: number; fret: number }[] | null
+    /**
+     * Quiz rings at these positions (dots there or not): a solid one where a
+     * right answer landed, dashed ones for the reveal after a miss.
+     */
+    marks?: { string: number; fret: number; kind?: 'hit' | 'reveal' }[] | null
     /** Quiz mode: dots ignore the pointer so taps land on the cells. */
     passiveDots?: boolean
   }>(),
@@ -77,19 +81,24 @@ const emit = defineEmits<{
   cell: [stringIndex: number, fret: number]
 }>()
 
+// Under a finger the rows grow; the width — and so the board's scale — does
+// not, so this is the one dimension the pointer type changes (UX-07).
+const coarse = useMediaQuery(COARSE_POINTER)
+const gap = computed(() => (coarse.value ? GEOM.coarseStringGap : GEOM.stringGap))
+const rowY = (index: number) =>
+  stringY(index, props.tuning.strings.length, props.stringOrder, gap.value)
+
 const width = computed(() => boardWidth(props.fretCount))
-const height = computed(() => boardHeight(props.tuning.strings.length))
+const height = computed(() => boardHeight(props.tuning.strings.length, gap.value))
 const mx = (x: number) => mirrorX(x, props.handedness, width.value)
 
 const boardTop = computed(() => GEOM.topPad)
-const boardBottom = computed(
-  () => GEOM.topPad + props.tuning.strings.length * GEOM.stringGap,
-)
+const boardBottom = computed(() => GEOM.topPad + props.tuning.strings.length * gap.value)
 
 const strings = computed(() =>
   props.tuning.strings.map((_, i) => ({
     index: i,
-    y: stringY(i, props.tuning.strings.length, props.stringOrder),
+    y: rowY(i),
     letter: formatNote(props.tuning.letters[i] ?? ''),
     altered: (props.offsets?.[i] ?? 0) !== 0,
     // Lower strings draw thicker, whatever row they display on.
@@ -125,7 +134,7 @@ const renderedDots = computed(() =>
       fret: d.fret,
       midi: d.midi,
       x: dotX(d.fret, props.handedness, width.value),
-      y: stringY(d.string, props.tuning.strings.length, props.stringOrder),
+      y: rowY(d.string),
       label: props.hideLabels
         ? ''
         : props.labelMode === 'names'
@@ -167,9 +176,9 @@ const renderedLinks = computed(() =>
   (props.links ?? []).map(l => ({
     key: `${l.from.string}:${l.from.fret}-${l.to.string}:${l.to.fret}`,
     x1: dotX(l.from.fret, props.handedness, width.value),
-    y1: stringY(l.from.string, props.tuning.strings.length, props.stringOrder),
+    y1: rowY(l.from.string),
     x2: dotX(l.to.fret, props.handedness, width.value),
-    y2: stringY(l.to.string, props.tuning.strings.length, props.stringOrder),
+    y2: rowY(l.to.string),
   })),
 )
 
@@ -184,7 +193,7 @@ const cells = computed(() => {
         s,
         f,
         x: dotX(f, props.handedness, width.value) - w / 2,
-        y: stringY(s, props.tuning.strings.length, props.stringOrder) - GEOM.stringGap / 2,
+        y: rowY(s) - gap.value / 2,
         w,
       })
     }
@@ -195,8 +204,9 @@ const cells = computed(() => {
 const renderedMarks = computed(() =>
   (props.marks ?? []).map(m => ({
     key: `${m.string}:${m.fret}`,
+    cls: m.kind === 'hit' ? 'fb-mark-hit' : 'fb-mark-reveal',
     x: dotX(m.fret, props.handedness, width.value),
-    y: stringY(m.string, props.tuning.strings.length, props.stringOrder),
+    y: rowY(m.string),
   })),
 )
 
@@ -204,17 +214,23 @@ const renderedGhost = computed(() =>
   props.ghost
     ? {
         x: dotX(props.ghost.fret, props.handedness, width.value),
-        y: stringY(props.ghost.string, props.tuning.strings.length, props.stringOrder),
+        y: rowY(props.ghost.string),
         label: formatNote(props.ghost.name),
       }
     : null,
 )
+
+// The ± circles are 7.4 units across a board that renders at ~0.85, so each
+// gets an invisible rect behind it: wider than the circle, and exactly one
+// string row tall, so neighbouring tuners keep their own taps (UX-07).
+const tunerHit = computed(() => ({ w: GEOM.tunerHit, h: gap.value }))
 
 const tuners = computed(() =>
   strings.value.map(s => ({
     ...s,
     upX: mx(GEOM.tunerWidth - 14),
     downX: mx(14),
+    hitY: s.y - tunerHit.value.h / 2,
   })),
 )
 
@@ -293,7 +309,7 @@ function onTunerKey(e: KeyboardEvent, index: number, delta: 1 | -1) {
       :x="c.x"
       :y="c.y"
       :width="c.w"
-      :height="GEOM.stringGap"
+      :height="gap"
       @click="emit('cell', c.s, c.f)"
     />
 
@@ -350,6 +366,7 @@ function onTunerKey(e: KeyboardEvent, index: number, delta: 1 | -1) {
       v-for="m in renderedMarks"
       :key="`mark-${m.key}`"
       class="fb-mark"
+      :class="m.cls"
       :cx="m.x"
       :cy="m.y"
       r="12.5"
@@ -382,6 +399,13 @@ function onTunerKey(e: KeyboardEvent, index: number, delta: 1 | -1) {
         @click="emit('tune', t.index, 1)"
         @keydown="onTunerKey($event, t.index, 1)"
       >
+        <rect
+          class="fb-tuner-hit"
+          :x="t.upX - tunerHit.w / 2"
+          :y="t.hitY"
+          :width="tunerHit.w"
+          :height="tunerHit.h"
+        />
         <circle :cx="t.upX" :cy="t.y" r="7.4" />
         <text :x="t.upX" :y="t.y + 3.2" text-anchor="middle">+</text>
       </g>
@@ -393,6 +417,13 @@ function onTunerKey(e: KeyboardEvent, index: number, delta: 1 | -1) {
         @click="emit('tune', t.index, -1)"
         @keydown="onTunerKey($event, t.index, -1)"
       >
+        <rect
+          class="fb-tuner-hit"
+          :x="t.downX - tunerHit.w / 2"
+          :y="t.hitY"
+          :width="tunerHit.w"
+          :height="tunerHit.h"
+        />
         <circle :cx="t.downX" :cy="t.y" r="7.4" />
         <text :x="t.downX" :y="t.y + 3.2" text-anchor="middle">−</text>
       </g>
@@ -503,8 +534,37 @@ function onTunerKey(e: KeyboardEvent, index: number, delta: 1 | -1) {
   fill: none;
   stroke: var(--hb-good);
   stroke-width: 2.4;
-  stroke-dasharray: 4 3;
   pointer-events: none;
+}
+
+/* the answer you missed, spelled out */
+.fb-mark-reveal {
+  stroke-dasharray: 4 3;
+}
+
+/* the spot you hit — solid, and gone again when the next question arrives */
+.fb-mark-hit {
+  stroke-width: 3;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fb-mark-hit {
+    /* scale about the ring's own centre, not the SVG origin */
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fb-mark-pop 220ms ease-out;
+  }
+}
+
+@keyframes fb-mark-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .fb-ghost circle {
@@ -613,6 +673,11 @@ function onTunerKey(e: KeyboardEvent, index: number, delta: 1 | -1) {
 
 .fb-tuner-btn {
   cursor: pointer;
+}
+
+/* Transparent, not `none`: a painted fill is what makes it a target. */
+.fb-tuner-hit {
+  fill: transparent;
 }
 
 .fb-tuner-btn circle {

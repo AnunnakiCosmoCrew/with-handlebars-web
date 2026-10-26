@@ -1,5 +1,6 @@
 import { Soundfont } from 'smplr'
 import type { PlaybackNotes } from '@anunnakicosmocrew/handlebars'
+import { claimPlaybackSession } from './session.js'
 
 export type InstrumentId = 'nylon' | 'steel' | 'electric-clean' | 'electric-jazz'
 
@@ -54,14 +55,35 @@ export class AudioEngine {
   private ctx: AudioContext | null = null
   private player: Soundfont | null = null
   private loadedInstrument: InstrumentId | null = null
+  private watchingVisibility = false
 
   /** The shared AudioContext, created lazily (call from a user gesture). */
   ensureContext(): AudioContext {
+    // Ask iOS for a playback session before the first note, so the ring/silent
+    // switch stops muting us. Here rather than at load because claiming it
+    // pauses whatever the user was listening to (src/audio/session.ts).
+    claimPlaybackSession()
     this.ctx ??= new AudioContext()
+    this.watchVisibility()
     // Some browsers hand out a suspended context even inside a gesture;
-    // kick the resume so drone/metronome callers aren't left silent.
-    if (this.ctx.state === 'suspended') void this.ctx.resume()
+    // kick the resume so drone/metronome callers aren't left silent. A refusal
+    // is not worth a rejected promise: the caller plays into it either way.
+    if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {})
     return this.ctx
+  }
+
+  /**
+   * A phone call or a trip to another app suspends the context, and iOS does
+   * not hand it back on its own: a drone or metronome left running would
+   * return silent and stay that way until the next tap. Resume on the way in.
+   */
+  private watchVisibility(): void {
+    if (this.watchingVisibility || typeof document === 'undefined') return
+    this.watchingVisibility = true
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return
+      if (this.ctx?.state === 'suspended') this.ctx.resume().catch(() => {})
+    })
   }
 
   async ensureInstrument(id: InstrumentId): Promise<Soundfont> {

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { FRET_COUNTS } from '../lib/url-state.js'
 import { useRoomStore } from '../stores/room.js'
+import { useFloatingPanel } from '../composables/useFloatingPanel.js'
 
 const store = useRoomStore()
 const open = ref(false)
 const rootEl = ref<HTMLElement>()
+const panelEl = ref<HTMLElement>()
 const buttonEl = ref<HTMLButtonElement>()
 
 function close() {
@@ -13,23 +15,14 @@ function close() {
   buttonEl.value?.focus()
 }
 
-// Dismissal has to come from the pointer, not from focus alone. Pressing a
-// radio's *label* blurs the button before the browser hands focus to the
-// input, so a focusout-only rule tore the panel down mid-click and swallowed
-// the setting — the click never reached the input that was already gone.
-function onPointerdown(e: PointerEvent) {
-  if (open.value && !rootEl.value?.contains(e.target as Node)) open.value = false
-}
-
-// Focus leaving for somewhere else (tabbing away) still closes; focus going
-// nowhere in particular is the label case above, and is left to the pointer.
-function onFocusout(e: FocusEvent) {
-  const next = e.relatedTarget as Node | null
-  if (next && !rootEl.value?.contains(next)) open.value = false
-}
-
-onMounted(() => document.addEventListener('pointerdown', onPointerdown))
-onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerdown))
+// The pointer-outside close and the guarded focusout both live in the
+// composable, along with the clamp that keeps the panel on a narrow screen.
+const { panelStyle, onFocusout } = useFloatingPanel({
+  open,
+  root: rootEl,
+  panel: panelEl,
+  close: () => (open.value = false),
+})
 </script>
 
 <template>
@@ -38,6 +31,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerdown)
       ref="buttonEl"
       type="button"
       class="display-button"
+      aria-label="Display options"
       aria-haspopup="dialog"
       :aria-expanded="open"
       @click="open = !open"
@@ -50,11 +44,13 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerdown)
         <line x1="1.5" y1="12" x2="14.5" y2="12" />
         <circle cx="8.5" cy="12" r="2.1" />
       </svg>
-      Display
+      <span class="button-label">Display</span>
     </button>
     <div
       v-if="open"
+      ref="panelEl"
       class="display-panel"
+      :style="panelStyle"
       role="dialog"
       aria-label="Display options"
       @keydown.escape.stop="close()"
@@ -130,6 +126,15 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerdown)
   background: var(--hb-active-bg);
 }
 
+/* Narrow screens (ADR-0007): the word goes, the sliders stay — the same trade
+   ShareButton makes beside it, so the two buttons stay a matched pair. The
+   trigger's aria-label carries the name in both layouts. */
+@media (max-width: 640px) {
+  .display-button .button-label {
+    display: none;
+  }
+}
+
 .display-icon {
   width: 15px;
   height: 15px;
@@ -142,8 +147,20 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerdown)
   position: absolute;
   z-index: 30;
   top: calc(100% + 4px);
-  right: 0;
+  /* The trigger wraps to the start of a row on a phone, which put this right-
+     anchored panel off the left edge (HB-83, UX-01). The cap and the measured
+     shift together keep it on screen wherever the trigger lands; the shift is
+     signed in viewport coordinates, so a right inset spends it negated. */
+  right: calc(-1 * var(--hb-panel-shift, 0px));
   width: 15rem;
+  max-width: var(--hb-panel-max-width);
+  /* Eight fieldsets is taller than a landscape phone screen. Cap against the
+     viewport and let the panel itself scroll; overscroll stays inside it so
+     reaching the last option does not start dragging the room behind it. */
+  max-height: calc(100vh - 7rem);
+  max-height: calc(100dvh - 7rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--hb-surface);
   border: 1px solid var(--hb-border);
   border-radius: 8px;

@@ -38,4 +38,27 @@ describe('OgCard', () => {
     const w2 = mount(OgCard)
     expect(w2.find('.legend').exists()).toBe(false)
   })
+
+  // HB-155: the build photographs one card per board page, named by its path.
+  it('renders the board a board path names', () => {
+    history.replaceState(null, '', '/og.html?board=/standard/c-sharp/chord/7-sharp-9/')
+    const w = mount(OgCard)
+    expect(w.text()).toContain('C#7#9')
+    expect(w.text()).toContain('E A D G B E · 24 frets')
+    expect(w.text()).not.toContain('Pentatonic')
+  })
+
+  it('takes the board over the query, and falls back to it for a path with no page', () => {
+    history.replaceState(null, '', '/og.html?board=/standard/e/scale/dorian/&root=G&chord=maj7')
+    expect(mount(OgCard).text()).toContain('E Dorian')
+    history.replaceState(null, '', '/og.html?board=/standard/h/scale/dorian/&root=G&chord=maj7')
+    expect(mount(OgCard).text()).toContain('Gmaj7')
+  })
+
+  it('draws the 16:9 frame for size=wide and the Open Graph frame otherwise', () => {
+    history.replaceState(null, '', '/og.html?board=/standard/e/scale/dorian/&size=wide')
+    expect(mount(OgCard).find('.card').classes()).toContain('wide')
+    history.replaceState(null, '', '/og.html?board=/standard/e/scale/dorian/')
+    expect(mount(OgCard).find('.card').classes()).not.toContain('wide')
+  })
 })

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>App Store screenshots — With Handlebars</title>
+    <meta name="robots" content="noindex" />
+    <!--
+      The source of the App Store screenshots. Dev-only: it is deliberately
+      absent from vite.config.ts's build inputs, so it never ships. Render it
+      with tools/render-shots.sh.
+
+      Unlike og.html, icon.html and splash.html this page draws no sheet of its
+      own — it mounts the real App.vue, because a store screenshot has to be
+      the product rather than a picture of it. What src/shots/main.ts adds is
+      only the app's *context*: the native bridge the WKWebView would inject, a
+      seeded Math.random, and an empty localStorage. See that file for why.
+
+      No <style> block: src/style.css already zeroes the body margin, and
+      unlike splash.html this page wants the body background — it is the
+      screenshot's backdrop.
+    -->
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/shots/main.ts"></script>
+  </body>
+</html>

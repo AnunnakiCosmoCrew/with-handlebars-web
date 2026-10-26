@@ -12,6 +12,19 @@ export const GEOM = {
   nutWidth: 7,
   fretWidth: 54,
   stringGap: 26,
+  /**
+   * String rows under a finger. The board renders width-first — 640 px for the
+   * 12-fret neck, a scale of ~0.85 — so a 26-unit row is 22 px tall and the
+   * vertical miss is what costs a tap. 32 units buys 27 px without touching
+   * the horizontal geometry, and desktop keeps its density.
+   */
+  coarseStringGap: 32,
+  /**
+   * Width of the invisible rect that makes a tuner ± bigger than its circle.
+   * Its height is the string row, so the target grows with `stringGap` and
+   * never reaches into the tuner above or below.
+   */
+  tunerHit: 24,
   topPad: 26,
   bottomPad: 26,
 } as const
@@ -20,8 +33,8 @@ export function boardWidth(fretCount: number): number {
   return GEOM.tunerWidth + GEOM.openWidth + GEOM.nutWidth + fretCount * GEOM.fretWidth + 8
 }
 
-export function boardHeight(stringCount: number): number {
-  return GEOM.topPad + stringCount * GEOM.stringGap + GEOM.bottomPad
+export function boardHeight(stringCount: number, stringGap: number = GEOM.stringGap): number {
+  return GEOM.topPad + stringCount * stringGap + GEOM.bottomPad
 }
 
 /** Mirror an x coordinate for left-handed display. */
@@ -33,9 +46,14 @@ export function mirrorX(x: number, handedness: Handedness, width: number): numbe
  * Vertical center of a string. `index` indexes tuning.strings (0 = lowest
  * pitch); bass-bottom puts it in the bottom row.
  */
-export function stringY(index: number, stringCount: number, order: StringOrder): number {
+export function stringY(
+  index: number,
+  stringCount: number,
+  order: StringOrder,
+  stringGap: number = GEOM.stringGap,
+): number {
   const row = order === 'bass-bottom' ? stringCount - 1 - index : index
-  return GEOM.topPad + row * GEOM.stringGap + GEOM.stringGap / 2
+  return GEOM.topPad + row * stringGap + stringGap / 2
 }
 
 /** X of the nut's left edge in natural (right-handed) coordinates. */

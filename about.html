@@ -2,21 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>About With Handlebars</title>
     <meta
       name="description"
-      content="With Handlebars is a tool for mastering scales and chords on the guitar — the whole neck at once, in any tuning. Built by the Anunnaki Cosmo Crew."
+      content="With Handlebars is a tool for mastering scales and chords on the guitar, bass, or ukulele — the whole neck at once, in any tuning. Built by CosmoCrew."
     />
     <link rel="canonical" href="https://withhandlebars.com/about" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Safari's Smart App Banner (HB-145): the app icon and a View / Open button at the
+         top of the page on iPhone and iPad. Safari-only, so it never paints inside the
+         WKWebView. The id is the listing's; test/smart-app-banner.spec.ts keeps the two
+         in step. -->
+    <meta name="apple-itunes-app" content="app-id=6815550767" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="/src/style.css" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f8fa" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101217" />
     <meta property="og:title" content="About With Handlebars" />
     <meta
       property="og:description"
-      content="A tool for mastering scales and chords on the guitar, from the Anunnaki Cosmo Crew."
+      content="A tool for mastering scales and chords on the guitar, bass, or ukulele, from CosmoCrew."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://withhandlebars.com/about" />
@@ -33,7 +43,12 @@
     <meta name="twitter:image" content="https://withhandlebars.com/og.png" />
     <style>
       .page {
+        /* See src/App.vue: vh first so the iOS 15.0 floor (ADR-0003) still gets
+           a full-height page, dvh for everything from Safari 15.4 on. */
         min-height: 100vh;
+        min-height: 100dvh;
+        padding: var(--hb-safe-top) var(--hb-safe-right) var(--hb-safe-bottom)
+          var(--hb-safe-left);
         display: flex;
         flex-direction: column;
       }
@@ -186,7 +201,8 @@
       }
 
       .site-footer a.support-link {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
         margin-left: 0.35rem;
         padding: 0.28rem 0.75rem;
         border: 1px solid var(--hb-border);
@@ -201,6 +217,28 @@
         border-color: var(--hb-accent);
       }
 
+      .site-footer-store {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      .site-footer a.app-store-link {
+        display: inline-block;
+        line-height: 0;
+        border-radius: 7px;
+      }
+
+      .site-footer a.app-store-link:focus-visible {
+        outline: 2px solid var(--hb-accent);
+        outline-offset: 2px;
+      }
+
+      .site-footer-platforms {
+        font-size: 0.78rem;
+      }
+
       @media (max-width: 640px) {
         .room-header {
           flex-direction: column;
@@ -208,13 +246,85 @@
           gap: 0.4rem;
         }
       }
+
+      /* ADR-0003: the app shell carries no external commerce. The pill is
+         hidden by a fact the guard below records before the body is parsed,
+         so it never paints inside the app. A class rather than
+         :has(.support-link) because ADR-0003 sets an iOS 15.0 floor and :has()
+         landed in Safari 15.4. */
+      [data-platform='native'] .site-footer-support {
+        display: none;
+      }
     </style>
+    <script>
+      // The room asks src/lib/platform.ts; a page of prose ships no module
+      // (ADR-0001, as amended by HB-40), so the same check is inlined here —
+      // no import, no chunk, no request. Capacitor injects its bridge at
+      // document start on every page of the shell, so the answer is already
+      // available this early and the pill never flashes.
+      //
+      // Default-visible, hidden only if native: about.html is where
+      // index.html's <noscript> sends visitors with JavaScript off, and inside
+      // the WKWebView JavaScript is guaranteed.
+      (function () {
+        var cap = window.Capacitor
+        var named = cap && cap.getPlatform && cap.getPlatform()
+        var native =
+          named === 'ios' ||
+          named === 'android' ||
+          !!window.androidBridge ||
+          !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bridge) ||
+          !!(cap && cap.isNativePlatform && cap.isNativePlatform())
+        if (!native) return
+        document.documentElement.dataset.platform = 'native'
+
+        // External links leave for a Safari sheet, not the shell (HB-48). The
+        // twin of src/lib/external-link.ts, inlined for the same reason the
+        // platform check above is: no module on this page. That wrapper
+        // imports the plugin (ADR-0005); with no module to import from, this
+        // page asks the injected bridge for the same call.
+        // ES5 only — ADR-0003 sets an iOS 15.0 floor.
+        document.addEventListener('click', function (event) {
+          if (event.defaultPrevented || event.button) return
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+          // A click is reported against the text node inside the anchor,
+          // which has no closest — climb to an element first.
+          var node = event.target
+          while (node && typeof node.closest !== 'function') node = node.parentNode
+          var anchor = node ? node.closest('a[href]') : null
+          if (!anchor) return
+          // Absolute http(s) to another origin only. mailto: belongs to the
+          // Mail app — a Safari sheet cannot open it — and the room and this
+          // page are the app's own, so they navigate in place.
+          var url
+          try {
+            url = new URL(anchor.getAttribute('href'), window.location.origin)
+          } catch (e) {
+            return
+          }
+          if (url.protocol !== 'http:' && url.protocol !== 'https:') return
+          if (url.origin === window.location.origin) return
+          // Read the bridge at click time, not guard time: the shell installs
+          // its plugins after the page parses.
+          var bridge = window.Capacitor
+          if (!bridge || !bridge.nativePromise) return
+          event.preventDefault()
+          bridge.nativePromise('Browser', 'open', { url: url.href })['catch'](function () {
+            // No plugin, or it refused: fall back to the plain navigation,
+            // which Capacitor turns into its own app-switch to Safari.
+            window.location.href = url.href
+          })
+        })
+      })()
+    </script>
   </head>
   <body>
     <div class="page">
       <main class="room">
         <header class="room-header">
           <a class="brand" href="/">
+            <!-- The brand mark. A static page can't import a component (ADR-0001), so
+                 this copy is kept in step with src/BrandMark.vue by hand. -->
             <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
               <line x1="4" y1="32" x2="60" y2="32" stroke="var(--hb-board-line)" stroke-width="4" />
               <line x1="11" y1="10" x2="11" y2="54" stroke="var(--hb-board-line)" stroke-width="6" />
@@ -231,7 +341,7 @@
 
         <h2>About With Handlebars</h2>
         <p class="lede">
-          With Handlebars is a tool for mastering scales and chords on the guitar. Not a
+          With Handlebars is a tool for mastering scales and chords on the guitar, bass, or ukulele. Not a
           chord dictionary you look something up in and close — a room you stay in, where
           the whole neck is visible at once and every shape you already half-know turns
           out to be the same handful of tones in a different place.
@@ -248,7 +358,7 @@
         <ul class="what-list">
           <li>
             <strong>The whole neck, any tuning.</strong> 58 chord qualities and 168 scales
-            across 23 tunings, up to 24 frets, left- or right-handed.
+            across 30 tunings for guitar, bass, and ukulele, up to 24 frets, left- or right-handed.
           </li>
           <li>
             <strong>Spelling that tells the truth.</strong> Strict enharmonics, so a G♯ is a
@@ -289,14 +399,22 @@
 
         <h2>Who builds it</h2>
         <p>
-          With Handlebars comes from the
-          <a href="https://anunnakicosmocrew.github.io/" rel="noopener">Anunnaki Cosmo Crew</a>
+          With Handlebars comes from
+          <a href="https://cosmocrew.dev/" rel="noopener">CosmoCrew</a>
           — calm, capable software, crafted to last. We build tools we want on our own
           machines and keep sharpening them long after they work: SliceFocus for visual day
           planning, LexiPower for vocabulary, and now a fretboard that finally holds still
           long enough to be learned. The crew is on the web at
-          <a href="https://anunnakicosmocrew.github.io/" rel="noopener">anunnakicosmocrew.github.io</a>,
-          moving to <strong>cosmocrew.dev</strong>.
+          <a href="https://cosmocrew.dev/" rel="noopener">cosmocrew.dev</a>.
+        </p>
+        <p>
+          On the App Store, With Handlebars is published by
+          <a href="https://luvita.tr/" rel="noopener">Luvita Teknoloji Ltd. Şti.</a> — the
+          seller line carries its registered title, LUVITA TEKNOLOJI ENERJI YAZILIM SANAYI
+          VE TICARET LIMITED SIRKETI — the company behind the CosmoCrew brand and this
+          website, founded and owned by Mert Yılmaz Ertuğrul. The iOS app and the site are
+          one product from one codebase: the same build, wrapped for iOS, released by the
+          same hands.
         </p>
         <p>
           The music theory behind the board is its own open library, written from first
@@ -325,14 +443,29 @@
       </main>
 
       <footer class="site-footer">
-        <p>
+        <p class="site-footer-support">
           Do you like With Handlebars?
           <a class="support-link" href="https://ko-fi.com/cosmocrew" rel="noopener">♥ Support the crew</a>
         </p>
+        <!-- Apple's own badge artwork, used as supplied (the guidelines rule out
+             redrawing it). Hidden in the app with the pill above: there it would
+             point at itself. The caption is the listing's own platform line (iPhone,
+             iPad, and macOS 12+ on Apple silicon via the iPad build), kept in step
+             with src/App.vue by hand. -->
+        <p class="site-footer-support site-footer-store">
+          <a class="app-store-link" href="https://apps.apple.com/app/with-handlebars/id6815550767" rel="noopener" aria-label="Download With Handlebars on the App Store">
+            <img src="/download-on-the-app-store.svg" alt="Download on the App Store" width="120" height="40" />
+          </a>
+          <span class="site-footer-platforms">One app for iPhone, iPad and Apple silicon Macs.</span>
+        </p>
         <p>
-          <a href="/">With Handlebars</a> — an
-          <a href="https://cosmocrew.dev/" rel="noopener">Anunnaki Cosmo Crew</a>
+          <a href="/">With Handlebars</a> — a
+          <a href="https://cosmocrew.dev/" rel="noopener">CosmoCrew</a>
           project.
+        </p>
+        <p>
+          <a href="privacy.html">Privacy</a> ·
+          <a href="/boards/">Every chord and scale board</a>
         </p>
         <p>
           Guitar samples from the MusyngKite soundfont via
@@ -340,6 +473,12 @@
             >midi-js-soundfonts</a
           >
           (MIT).
+        </p>
+        <!-- Who owns the software, one click away — the same line the room's footer
+             carries, kept word for word. -->
+        <p>
+          © 2026 CosmoCrew — a brand of
+          <a href="https://luvita.tr/" rel="noopener">Luvita Teknoloji Ltd. Şti.</a>
         </p>
       </footer>
     </div>

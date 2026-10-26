@@ -6,6 +6,9 @@ import { useRoomStore } from '../src/stores/room.js'
 import { usePracticeStore } from '../src/stores/practice.js'
 import { audioEngine } from '../src/audio/engine.js'
 import { drone, metronome } from '../src/audio/practice.js'
+import { haptics } from '../src/lib/haptics.js'
+import { quizSessionEnded } from '../src/lib/app-review.js'
+import { keepScreenAwake } from '../src/lib/keep-awake.js'
 
 vi.mock('../src/audio/engine.js', async importOriginal => {
   const mod = await importOriginal<typeof import('../src/audio/engine.js')>()
@@ -20,6 +23,10 @@ vi.mock('../src/audio/engine.js', async importOriginal => {
     },
   }
 })
+
+vi.mock('../src/lib/haptics.js', () => ({
+  haptics: { right: vi.fn(), wrong: vi.fn(), accent: vi.fn() },
+}))
 
 vi.mock('../src/audio/practice.js', async importOriginal => {
   const mod = await importOriginal<typeof import('../src/audio/practice.js')>()
@@ -39,6 +46,9 @@ vi.mock('../src/audio/practice.js', async importOriginal => {
     },
   }
 })
+
+vi.mock('../src/lib/app-review.js', () => ({ quizSessionEnded: vi.fn() }))
+vi.mock('../src/lib/keep-awake.js', () => ({ keepScreenAwake: vi.fn() }))
 
 function freshStores() {
   setActivePinia(createPinia())
@@ -72,9 +82,12 @@ describe('quiz', () => {
     expect(practice.answerCell(hit.string, hit.fret)).toBe(true)
     expect(practice.feedback).toBe('right')
     expect(practice.score).toEqual({ right: 1, asked: 1 })
+    // the tapped cell rings, so a player looking at the neck sees the result
+    expect(practice.boardMarks).toEqual([{ string: hit.string, fret: hit.fret, kind: 'hit' }])
     // the next question arrives on its own after the flash
     vi.advanceTimersByTime(1000)
     expect(practice.feedback).toBe('idle')
+    expect(practice.boardMarks).toBe(null) // and the ring goes with it
     expect(practice.question).not.toBe(null)
     expect(practice.score).toEqual({ right: 1, asked: 1 })
   })
@@ -98,6 +111,7 @@ describe('quiz', () => {
     expect(practice.boardMarks![0]).toEqual({
       string: expect.any(Number),
       fret: expect.any(Number),
+      kind: 'reveal',
     })
     vi.advanceTimersByTime(5000)
     expect(practice.feedback).toBe('wrong') // no auto-advance on a miss
@@ -137,6 +151,9 @@ describe('quiz', () => {
     practice.answerChoice(q.answer)
     expect(practice.feedback).toBe('right')
     expect(practice.score).toEqual({ right: 1, asked: 1 })
+    // the mystery dot itself is what rings when the name was right
+    const [s, f] = q.key.split(':').map(Number)
+    expect(practice.boardMarks).toEqual([{ string: s, fret: f, kind: 'hit' }])
   })
 
   it('drops the open question when the selection changes', async () => {
@@ -148,6 +165,49 @@ describe('quiz', () => {
     await nextTick()
     expect(practice.question).toBe(null)
     expect(practice.quizActive).toBe(false)
+  })
+
+  it('buzzes an answer — differently for right and wrong, and only for answers', async () => {
+    const { room, practice } = freshStores()
+    room.practice = 'quiz'
+    vi.spyOn(Math, 'random').mockReturnValue(0) // first root: C
+    practice.startQuiz('note')
+
+    // Starting a quiz is not an answer.
+    expect(haptics.right).not.toHaveBeenCalled()
+    expect(haptics.wrong).not.toHaveBeenCalled()
+
+    // string 0 fret 1 is F on standard tuning — never a C position
+    practice.answerCell(0, 1)
+    expect(haptics.wrong).toHaveBeenCalledTimes(1)
+    expect(haptics.right).not.toHaveBeenCalled()
+
+    practice.next()
+    const hit = notePositions(room.tuning, 'C', room.fretCount)[0]!
+    practice.answerCell(hit.string, hit.fret)
+    expect(haptics.right).toHaveBeenCalledTimes(1)
+    expect(haptics.wrong).toHaveBeenCalledTimes(1)
+
+    // Neither the auto-advance nor a board change that drops the question is
+    // an outcome to feel.
+    vi.advanceTimersByTime(1000)
+    room.root = 'A'
+    await nextTick()
+    expect(haptics.right).toHaveBeenCalledTimes(1)
+    expect(haptics.wrong).toHaveBeenCalledTimes(1)
+  })
+
+  it('buzzes a multiple-choice answer the same way', () => {
+    const { room, practice } = freshStores()
+    room.practice = 'quiz'
+    practice.startQuiz('dot')
+    const q = practice.question!
+    if (q.kind !== 'dot') throw new Error('unexpected kind')
+    practice.answerChoice(q.choices.find(c => c !== q.answer)!)
+    expect(haptics.wrong).toHaveBeenCalledTimes(1)
+    // a second pick after the miss is ignored, so it must not buzz again
+    practice.answerChoice(q.answer)
+    expect(haptics.right).not.toHaveBeenCalled()
   })
 })
 
@@ -338,6 +398,31 @@ describe('drone and metronome', () => {
     expect(practice.metronomeBeat).toBe(-1)
   })
 
+  it('buzzes the downbeat only, in whatever meter is set', () => {
+    const { room, practice } = freshStores()
+    const fire = (metronome as unknown as { onBeat: (b: number) => void }).onBeat
+
+    // Nothing is clicking yet — a stray announced beat must not buzz either.
+    fire(0)
+    expect(haptics.accent).not.toHaveBeenCalled()
+
+    practice.toggleMetronome()
+    fire(0)
+    expect(haptics.accent).toHaveBeenCalledTimes(1)
+    fire(1)
+    fire(2)
+    fire(3)
+    expect(haptics.accent).toHaveBeenCalledTimes(1) // 4/4: the head of the bar
+
+    // 6/8 is felt in two, so both pulse heads carry it — the same rule the
+    // accented click and the heavier beat dot follow.
+    room.meter = '6/8'
+    fire(0)
+    fire(3)
+    fire(4)
+    expect(haptics.accent).toHaveBeenCalledTimes(3)
+  })
+
   it('sets the tempo from a run of taps and resets after a long pause', () => {
     const { room, practice } = freshStores()
     practice.tapTempo(0)
@@ -364,5 +449,90 @@ describe('drone and metronome', () => {
     expect(practice.metronomeOn).toBe(false)
     expect(drone.stop).toHaveBeenCalled()
     expect(metronome.stop).toHaveBeenCalled()
+  })
+})
+
+describe('keeping the screen awake', () => {
+  it('holds the screen for the drone and the metronome, and only lets go of the last one', async () => {
+    const { room, practice } = freshStores()
+    room.practice = 'quiz'
+    await nextTick()
+    practice.toggleDrone()
+    await nextTick()
+    expect(keepScreenAwake).toHaveBeenLastCalledWith(true)
+    practice.toggleMetronome()
+    await nextTick()
+    // Already held — a second source is not a second ask.
+    expect(keepScreenAwake).toHaveBeenCalledTimes(1)
+    practice.toggleDrone()
+    await nextTick()
+    expect(keepScreenAwake).toHaveBeenCalledTimes(1)
+    practice.toggleMetronome()
+    await nextTick()
+    expect(keepScreenAwake).toHaveBeenLastCalledWith(false)
+  })
+
+  it('holds the screen for a running pattern and releases it when the run ends', async () => {
+    const { room, practice } = freshStores()
+    room.practice = 'patterns'
+    await nextTick()
+    practice.startPattern()
+    await nextTick()
+    expect(keepScreenAwake).toHaveBeenLastCalledWith(true)
+    // count-in bar, then the three arpeggio steps at 100 BPM
+    vi.advanceTimersByTime(2450 + 600 * 3)
+    await nextTick()
+    expect(practice.playing).toBe('off')
+    expect(keepScreenAwake).toHaveBeenLastCalledWith(false)
+  })
+
+  it('holds the screen for the progression player until it is stopped', async () => {
+    const { room, practice } = freshStores()
+    room.mode = 'scale'
+    room.root = 'C'
+    room.practice = 'progression'
+    await nextTick()
+    practice.startProgression()
+    await nextTick()
+    expect(keepScreenAwake).toHaveBeenLastCalledWith(true)
+    practice.stopPlayback()
+    await nextTick()
+    expect(keepScreenAwake).toHaveBeenLastCalledWith(false)
+  })
+
+  it('lets the screen sleep when the panel closes on everything', async () => {
+    const { room, practice } = freshStores()
+    room.practice = 'quiz'
+    await nextTick()
+    practice.toggleDrone()
+    practice.toggleMetronome()
+    await nextTick()
+    expect(keepScreenAwake).toHaveBeenLastCalledWith(true)
+    room.practice = 'off'
+    await nextTick()
+    expect(keepScreenAwake).toHaveBeenLastCalledWith(false)
+  })
+})
+
+describe('quiz sessions (app review)', () => {
+  it('reports the answers once when the quiz is left, and not again on tab flips', async () => {
+    const { room, practice } = freshStores()
+    room.practice = 'quiz'
+    practice.startQuiz('note')
+    for (let i = 0; i < 10; i++) {
+      practice.next()
+      practice.answerCell(0, 1)
+    }
+    await nextTick()
+    expect(quizSessionEnded).not.toHaveBeenCalled() // never mid-quiz
+    room.practice = 'off'
+    await nextTick()
+    expect(quizSessionEnded).toHaveBeenLastCalledWith(10)
+    room.practice = 'quiz'
+    await nextTick()
+    room.practice = 'off'
+    await nextTick()
+    expect(quizSessionEnded).toHaveBeenLastCalledWith(0)
+    expect(quizSessionEnded).toHaveBeenCalledTimes(2)
   })
 })

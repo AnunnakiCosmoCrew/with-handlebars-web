@@ -19,6 +19,9 @@ import {
   type DroneOptions,
   type MetronomeOptions,
 } from '../audio/practice.js'
+import { quizSessionEnded } from '../lib/app-review.js'
+import { haptics } from '../lib/haptics.js'
+import { keepScreenAwake } from '../lib/keep-awake.js'
 import { useRoomStore } from './room.js'
 
 export type QuizKind = 'note' | 'degree' | 'dot'
@@ -27,6 +30,11 @@ export type QuizQuestion =
   | { kind: 'note'; target: string; keys: Set<string> }
   | { kind: 'degree'; target: string; keys: Set<string> }
   | { kind: 'dot'; key: string; answer: string; choices: string[] }
+
+/** A board position the quiz points at. */
+export type BoardPos = { string: number; fret: number }
+/** …and why it is ringed: the spot you hit, or the answer you missed. */
+export type BoardMark = BoardPos & { kind: 'hit' | 'reveal' }
 
 function randomOf<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)]!
@@ -173,9 +181,23 @@ export const usePracticeStore = defineStore('practice', () => {
   const score = ref({ right: 0, asked: 0 })
   const feedback = ref<'idle' | 'right' | 'wrong'>('idle')
   const reveal = ref<Set<string> | null>(null)
+  // The cell a right answer landed on, for the ✓ ring the board draws back —
+  // the only acknowledgement a player looking at the neck gets, since a
+  // correct answer auto-advances and never lights a label up.
+  const hit = ref<BoardPos | null>(null)
   let feedbackTimer: ReturnType<typeof setTimeout> | undefined
 
   const quizActive = computed(() => room.practice === 'quiz' && question.value !== null)
+  // The question in words. It lives here, not in a component, because two
+  // surfaces ask it at once: the sticky bar under the neck and the practice
+  // card. Both read this one line.
+  const promptText = computed(() => {
+    const q = question.value
+    if (!q) return null
+    if (q.kind === 'note') return `Tap any ${q.target} on the neck`
+    if (q.kind === 'degree') return `Tap a dot playing the ${q.target}`
+    return 'Which note is the highlighted dot?'
+  })
   // While answering, the board keeps its secrets: labels off, dots inert so
   // taps land on the cells underneath (which the quiz swallows) — for every
   // question kind, or a dot click during name-that-dot would still pin and
@@ -190,13 +212,15 @@ export const usePracticeStore = defineStore('practice', () => {
     const q = question.value
     return q?.kind === 'dot' ? new Set([q.key]) : null
   })
-  // The reveal as positions to ring — answer spots exist whether or not the
-  // current selection puts a dot there (find-the-note usually doesn't).
-  const boardMarks = computed(() => {
+  // What the board rings: the spot a right answer hit, or after a miss the
+  // whole reveal. Answer spots exist whether or not the current selection puts
+  // a dot there (find-the-note usually doesn't), so these are positions, not dots.
+  const boardMarks = computed<BoardMark[] | null>(() => {
+    if (feedback.value === 'right') return hit.value ? [{ ...hit.value, kind: 'hit' }] : null
     if (feedback.value !== 'wrong' || !reveal.value) return null
     return [...reveal.value].map(k => {
       const [s, f] = k.split(':').map(Number)
-      return { string: s!, fret: f! }
+      return { string: s!, fret: f!, kind: 'reveal' as const }
     })
   })
 
@@ -233,19 +257,23 @@ export const usePracticeStore = defineStore('practice', () => {
     clearTimeout(feedbackTimer)
     feedback.value = 'idle'
     reveal.value = null
+    hit.value = null
     question.value = makeQuestion()
   }
 
-  function settle(correct: boolean, answerKeys: Set<string> | null) {
+  function settle(correct: boolean, answerKeys: Set<string> | null, at: BoardPos) {
     score.value = {
       right: score.value.right + (correct ? 1 : 0),
       asked: score.value.asked + 1,
     }
     if (correct) {
+      hit.value = at
       feedback.value = 'right'
+      haptics.right()
       feedbackTimer = setTimeout(next, 900)
     } else {
       feedback.value = 'wrong'
+      haptics.wrong()
       reveal.value = answerKeys
     }
   }
@@ -256,7 +284,7 @@ export const usePracticeStore = defineStore('practice', () => {
     if (!quizActive.value || !q || q.kind === 'dot' || feedback.value !== 'idle') {
       return quizActive.value
     }
-    settle(q.keys.has(`${stringIndex}:${fret}`), q.keys)
+    settle(q.keys.has(`${stringIndex}:${fret}`), q.keys, { string: stringIndex, fret })
     return true
   }
 
@@ -264,7 +292,8 @@ export const usePracticeStore = defineStore('practice', () => {
   function answerChoice(name: string) {
     const q = question.value
     if (!q || q.kind !== 'dot' || feedback.value !== 'idle') return
-    settle(name === q.answer, new Set([q.key]))
+    const [s, f] = q.key.split(':').map(Number)
+    settle(name === q.answer, new Set([q.key]), { string: s!, fret: f! })
   }
 
   function resetQuiz() {
@@ -272,6 +301,7 @@ export const usePracticeStore = defineStore('practice', () => {
     question.value = null
     feedback.value = 'idle'
     reveal.value = null
+    hit.value = null
   }
 
   function startQuiz(kind?: QuizKind) {
@@ -289,7 +319,13 @@ export const usePracticeStore = defineStore('practice', () => {
   metronome.onBeat = beatInBar => {
     // Only while something actually clicks — a beat announced just before a
     // stop must not overwrite the reset to -1.
-    if (metronomeOn.value || countingIn.value) metronomeBeat.value = beatInBar
+    if (!(metronomeOn.value || countingIn.value)) return
+    metronomeBeat.value = beatInBar
+    // Downbeats only (both pulse heads in 6/8), never subdivisions: a buzz on
+    // every click would be noise you can't hear over. `meterOf` is the same
+    // source the accented click and the heavier beat dot read, so the three
+    // can never disagree about which beat is the head of the bar.
+    if (meterOf(room.meter).accents.includes(beatInBar)) haptics.accent()
   }
 
   // The tonic an octave below the Play voicing — deep enough to sit under
@@ -372,6 +408,19 @@ export const usePracticeStore = defineStore('practice', () => {
     },
   )
 
+  // Leaving the quiz ends a quiz session; the native app may ask for a rating
+  // after enough of them (HB-171). Never mid-quiz: this fires on the way out.
+  watch(
+    () => room.practice,
+    (tab, was) => {
+      if (was !== 'quiz' || tab === 'quiz') return
+      // Consume the score, so flipping tabs again cannot recount the session.
+      const answers = score.value.asked
+      score.value = { right: 0, asked: 0 }
+      quizSessionEnded(answers)
+    },
+  )
+
   // Closing the panel silences everything, drone and metronome included.
   watch(
     () => room.practice,
@@ -381,6 +430,15 @@ export const usePracticeStore = defineStore('practice', () => {
       if (metronomeOn.value) toggleMetronome()
     },
   )
+
+  // Anything that sounds on its own — a running player, the drone, the
+  // metronome — should hold the screen open, because nobody is touching it
+  // while they practice. Watching the union rather than each toggle means
+  // every stop path already written above releases the hold for free.
+  const soundingContinuously = computed(
+    () => playing.value !== 'off' || droneOn.value || metronomeOn.value,
+  )
+  watch(soundingContinuously, on => keepScreenAwake(on))
 
   return {
     playing,
@@ -398,10 +456,12 @@ export const usePracticeStore = defineStore('practice', () => {
     feedback,
     reveal,
     quizActive,
+    promptText,
     hideLabels,
     passiveDots,
     boardKeys,
     boardMarks,
+    hit,
     startQuiz,
     next,
     answerCell,

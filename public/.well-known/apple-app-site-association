@@ -1,0 +1,19 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["B3P6L3T55C.com.cosmocrew.withhandlebars"],
+        "components": [
+          {
+            "/": "/",
+            "comment": "The room: a shared board is / with its state in the query. About, privacy and the rest stay in the browser."
+          },
+          {
+            "/": "/standard/*/*/*/",
+            "comment": "A tier-1 board's own page (HB-153): /<tuning>/<root>/<kind>/<type>/, one entry per tuning in tools/boards/tier1.json. The app opens it as the room's query for the same board."
+          }
+        ]
+      }
+    ]
+  }
+}

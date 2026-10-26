@@ -32,9 +32,12 @@ import {
 import {
   DEFAULT_STATE,
   buildQuery,
+  parseLocation,
   parseQuery,
+  stateLocation,
   type RoomState,
 } from '../lib/url-state.js'
+import { boardFromPath } from '../lib/board-path.js'
 
 export const STORAGE_KEY = 'handlebars.guitar-advanced.v1'
 
@@ -61,22 +64,35 @@ function persist(state: RoomState) {
 
 function reflectUrl(state: RoomState) {
   if (typeof history === 'undefined') return
-  const query = buildQuery(state)
-  const url = query ? `${location.pathname}?${query}` : location.pathname
-  history.replaceState(history.state, '', url)
+  // A board page names one board, so a state it no longer shows goes back to the
+  // room's own path rather than carrying a query on top of the wrong board.
+  const roomPath = boardFromPath(location.pathname) ? '/' : location.pathname
+  history.replaceState(history.state, '', stateLocation(state, roomPath))
+}
+
+/**
+ * Where the room starts. A URL that names a board *is* the board — by its
+ * path on a board page (HB-153), by its query anywhere else: the query omits every default (`buildQuery`), so a field it leaves out means "the
+ * default", not "whatever this visitor had last" — merging local state into it
+ * would open a sender's standard-tuning link in the recipient's stored drop-D.
+ * Only a URL that names nothing (the bare site, or junk parameters) falls back
+ * to the visitor's own last board. Reloading the room's own URL loses nothing
+ * either way, since the URL and localStorage are written from the same query.
+ */
+export function initialState(search: string, pathname = ''): RoomState {
+  const fromUrl = parseLocation(pathname, search)
+  const base = Object.keys(fromUrl).length ? {} : loadStored()
+  return { ...DEFAULT_STATE, ...base, ...fromUrl }
 }
 
 /**
  * The one store for the Guitar (Advanced) room. Initial state resolves as
- * defaults ← localStorage ← URL (URL wins, so shared links always show what
- * the sender saw); every change is written back to both.
+ * `initialState()` describes, so shared links always show what the sender saw;
+ * every change is written back to both the URL and localStorage.
  */
 export const useRoomStore = defineStore('guitar-advanced', () => {
-  const initial: RoomState = {
-    ...DEFAULT_STATE,
-    ...loadStored(),
-    ...parseQuery(typeof location === 'undefined' ? '' : location.search),
-  }
+  const initial: RoomState =
+    typeof location === 'undefined' ? initialState('') : initialState(location.search, location.pathname)
 
   const mode = ref(initial.mode)
   const root = ref(initial.root)

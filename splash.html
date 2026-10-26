@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Launch mark — With Handlebars</title>
+    <meta name="robots" content="noindex" />
+    <!--
+      The source of the iOS launch screen's brand mark. Dev-only: it is
+      deliberately absent from vite.config.ts's build inputs, so it never ships.
+      Render it with tools/render-splash.sh.
+    -->
+    <style>
+      /* The shot has to come out transparent: the storyboard paints the plate
+         with a colour set, and anything painted here would land in the PNG as a
+         square seam over it. src/style.css puts --hb-bg on the body, so it has
+         to be undone — and the default body margin would offset the tile.
+
+         !important, because src/style.css says `body { background: var(--hb-bg) }`
+         at the same specificity and Vite injects it after this block, so the
+         cascade would otherwise hand it the win. */
+      html,
+      body {
+        margin: 0;
+        background: transparent !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="splash"></div>
+    <script type="module" src="/src/splash/main.ts"></script>
+  </body>
+</html>

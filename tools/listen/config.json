@@ -1,0 +1,45 @@
+{
+  "$comment": "HB-162. Never add r/Guitar or r/musictheory: the launch plan and their rules rule them out.",
+  "userAgent": "script:handlebars-listen:v1 (read-only; by /u/REPLACE_WITH_FOUNDER_USERNAME)",
+  "subreddits": {
+    "guitarlessons": { "weeklyLinkCap": 1, "rule": "r/guitarlessons removes promotion. Answer first; a link only if it is the answer and you say you built it." },
+    "Guitar_Theory": { "weeklyLinkCap": 1, "rule": "Check the sidebar before linking your own project; answer the question in words first." },
+    "learnguitar": { "weeklyLinkCap": 1, "rule": "Keep self-promotion to a minimum; helpful answers first, one link at most." },
+    "bass": { "weeklyLinkCap": 1, "rule": "No spam: stay at 9 helpful comments to 1 link, and disclose that you built it." },
+    "ukulele": { "weeklyLinkCap": 1, "rule": "Check the sidebar's self-promotion rule; disclose that you built it." },
+    "7string": { "weeklyLinkCap": 1, "rule": "Small community: reply as a member, link only when it is the answer." }
+  },
+  "intentPhrases": [
+    "how do i see", "which notes", "drop d", "pentatonic positions", "relative minor",
+    "modes on the neck", "7-string", "ukulele chords", "baritone"
+  ],
+  "minThreadAgeMinutes": 30,
+  "maxThreadAgeHours": 36,
+  "maxComments": 6,
+  "digestSize": 5,
+  "minScore": 1,
+  "topics": [
+    { "phrases": ["minor pentatonic", "pentatonic minor"], "mode": "scale", "type": "pentatonic-minor" },
+    { "phrases": ["major pentatonic", "pentatonic major"], "mode": "scale", "type": "pentatonic-major" },
+    { "phrases": ["blues scale"], "mode": "scale", "type": "blues" },
+    { "phrases": ["harmonic minor"], "mode": "scale", "type": "harmonic-minor" },
+    { "phrases": ["melodic minor"], "mode": "scale", "type": "melodic-minor" },
+    { "phrases": ["dorian"], "mode": "scale", "type": "dorian" },
+    { "phrases": ["phrygian"], "mode": "scale", "type": "phrygian" },
+    { "phrases": ["lydian"], "mode": "scale", "type": "lydian" },
+    { "phrases": ["mixolydian"], "mode": "scale", "type": "mixolydian" },
+    { "phrases": ["locrian"], "mode": "scale", "type": "locrian" },
+    { "phrases": ["natural minor", "minor scale", "aeolian"], "mode": "scale", "type": "aeolian" },
+    { "phrases": ["major scale"], "mode": "scale", "type": "major" },
+    { "phrases": ["minor 7", "min7", "m7"], "mode": "chord", "type": "minor-7" },
+    { "phrases": ["major 7", "maj7"], "mode": "chord", "type": "major-7" },
+    { "phrases": ["dominant 7", "dom7"], "mode": "chord", "type": "dominant-7" },
+    { "phrases": ["sus4"], "mode": "chord", "type": "sus-4" },
+    { "phrases": ["sus2"], "mode": "chord", "type": "sus-2" },
+    { "phrases": ["power chord"], "mode": "chord", "type": "power" },
+    { "phrases": ["diminished"], "mode": "chord", "type": "diminished" },
+    { "phrases": ["augmented"], "mode": "chord", "type": "augmented" },
+    { "phrases": ["minor chord"], "mode": "chord", "type": "minor" },
+    { "phrases": ["major chord"], "mode": "chord", "type": "major" }
+  ]
+}

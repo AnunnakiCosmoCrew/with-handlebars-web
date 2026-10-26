@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Page not found — With Handlebars</title>
+    <!-- Cloudflare Pages serves this file with a real 404 for any path it has no file for
+         (HB-151). Nothing here should ever be indexed, and every link is root-relative
+         because the page is delivered at whatever URL was asked for. -->
+    <meta name="robots" content="noindex" />
+    <meta name="apple-itunes-app" content="app-id=6815550767" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f8fa" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101217" />
+    <style>
+      .page {
+        /* See src/App.vue: vh first so the iOS 15.0 floor (ADR-0003) still gets
+           a full-height page, dvh for everything from Safari 15.4 on. */
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: var(--hb-safe-top) var(--hb-safe-right) var(--hb-safe-bottom)
+          var(--hb-safe-left);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .room {
+        width: 100%;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 1.5rem 1rem 0;
+        flex: 1;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin-bottom: 2rem;
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        width: 26px;
+        height: 26px;
+        flex: none;
+      }
+
+      .brand-name {
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        line-height: 1.15;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        letter-spacing: -0.01em;
+        margin: 0 0 0.75rem;
+      }
+
+      p {
+        margin: 0 0 1rem;
+        line-height: 1.65;
+        max-width: 62ch;
+      }
+
+      a {
+        color: var(--hb-accent);
+      }
+
+      .site-footer {
+        margin-top: 2.5rem;
+        padding: 1.1rem 1rem 1.4rem;
+        border-top: 1px solid var(--hb-border);
+        text-align: center;
+        color: var(--hb-muted);
+        font-size: 0.85rem;
+      }
+
+      .site-footer p {
+        margin: 0.25rem 0;
+        max-width: none;
+      }
+
+      .site-footer a {
+        color: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <main class="room">
+        <a class="brand" href="/">
+          <!-- The brand mark. A static page can't import a component (ADR-0001), so
+               this copy is kept in step with src/BrandMark.vue by hand. -->
+          <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+            <line x1="4" y1="32" x2="60" y2="32" stroke="var(--hb-board-line)" stroke-width="4" />
+            <line x1="11" y1="10" x2="11" y2="54" stroke="var(--hb-board-line)" stroke-width="6" />
+            <circle cx="30" cy="32" r="11" fill="var(--hb-accent)" />
+            <circle cx="50" cy="32" r="7.5" fill="var(--hb-dot-tone)" />
+          </svg>
+          <span class="brand-name">With Handlebars</span>
+        </a>
+
+        <h1>Page not found</h1>
+        <!-- Plain HTML, so what a visitor with JavaScript off sees is what everyone sees. -->
+        <p>There is nothing at this address. <a href="/">Open the fretboard →</a></p>
+      </main>
+
+      <footer class="site-footer">
+        <p>
+          <a href="/">With Handlebars</a> — a
+          <a href="https://cosmocrew.dev/" rel="noopener">CosmoCrew</a>
+          project.
+        </p>
+        <p>
+          <a href="/about">About</a> · <a href="/privacy">Privacy</a>
+        </p>
+        <p>
+          © 2026 CosmoCrew — a brand of
+          <a href="https://luvita.tr/" rel="noopener">Luvita Teknoloji Ltd. Şti.</a>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

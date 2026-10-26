@@ -37,6 +37,32 @@ describe('room store', () => {
     expect(store.scaleId).toBe('dorian')
   })
 
+  it('opens a board link as sent, without the visitor\'s stored settings', () => {
+    // The link omits defaults, so a missing field means the default — not the
+    // recipient's drop-D from last week.
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tuning: 'drop-d', labels: 'intervals' }))
+    history.replaceState(null, '', '/?root=G')
+    const store = freshStore()
+    expect(store.root).toBe('G')
+    expect(store.tuning.id).toBe('standard')
+    expect(store.labelMode).toBe('names')
+  })
+
+  it('opens a shared default board on defaults', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ root: 'A', tuning: 'drop-d' }))
+    history.replaceState(null, '', '/?root=E')
+    const store = freshStore()
+    expect(store.root).toBe('E')
+    expect(store.tuning.id).toBe('standard')
+  })
+
+  it('falls back to the stored board when the URL names nothing', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ root: 'A' }))
+    history.replaceState(null, '', '/?utm_source=newsletter')
+    const store = freshStore()
+    expect(store.root).toBe('A')
+  })
+
   it('persists changes to localStorage and reflects them in the URL', async () => {
     const store = freshStore()
     store.root = 'F#'
@@ -46,17 +72,43 @@ describe('room store', () => {
       root: 'F#',
       chord: 'maj9',
     })
-    expect(location.search).toBe('?root=F%23&chord=maj9')
+    // A tier-1 board is reflected as its own page's path (HB-153).
+    expect(location.pathname + location.search).toBe('/standard/f-sharp/chord/major-9/')
   })
 
-  it('clears the query when back at defaults', async () => {
+  it('keeps the query form for a board without a page of its own', async () => {
     const store = freshStore()
-    store.root = 'A'
+    store.root = 'Db' // C# is the published spelling; its twin stays query-only
     await nextTick()
-    expect(location.search).toBe('?root=A')
+    expect(location.pathname + location.search).toBe('/?root=Db')
     store.root = 'E'
     await nextTick()
-    expect(location.search).toBe('')
+    expect(location.pathname + location.search).toBe('/standard/e/chord/major/')
+  })
+
+  it('opens the board a board path names, with the query adding the rest', () => {
+    // The path wins over a stale query and over the visitor's stored board.
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tuning: 'drop-d' }))
+    history.replaceState(null, '', '/standard/a/scale/dorian/?root=C&frets=24')
+    const store = freshStore()
+    expect([store.mode, store.root, store.scaleId, store.tuningId]).toEqual([
+      'scale',
+      'A',
+      'dorian',
+      'standard',
+    ])
+    expect(store.fretCount).toBe(24)
+  })
+
+  it('moves between board paths, and back to the room for a board without one', async () => {
+    history.replaceState(null, '', '/standard/a/chord/minor-7/?octaves=on')
+    const store = freshStore()
+    store.chordId = 'm9'
+    await nextTick()
+    expect(location.pathname + location.search).toBe('/standard/a/chord/minor-9/?octaves=on')
+    store.chordId = 'm11'
+    await nextTick()
+    expect(location.pathname + location.search).toBe('/?root=A&chord=m11&octaves=on')
   })
 
   it('applies tuner offsets and flags the tuning custom', async () => {
@@ -386,7 +438,7 @@ describe('room store', () => {
     )
     expect(store.guideKeys).toEqual(expected)
     expect(store.lensKeys).toBe(store.guideKeys)
-    expect(location.search).toBe('?chord=7&guides=on')
+    expect(location.pathname + location.search).toBe('/standard/e/chord/dominant-7/?guides=on')
   })
 
   it('keeps the guide lens mutually exclusive with the other lenses', () => {
@@ -432,7 +484,7 @@ describe('room store', () => {
     await nextTick()
     expect(store.dotRoles!.get('0:0')).toBe('root')
     expect(store.presentRoles).toEqual(['root', 'third', 'fifth', 'seventh'])
-    expect(location.search).toBe('?chord=maj7&roles=on')
+    expect(location.pathname + location.search).toBe('/standard/e/chord/major-7/?roles=on')
   })
 
   it('mirrors the roles onto the staff pitches by sounding midi', async () => {

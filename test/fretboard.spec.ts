@@ -8,12 +8,15 @@ import {
 } from '@anunnakicosmocrew/handlebars'
 import Fretboard from '../src/components/Fretboard.vue'
 import {
+  GEOM,
+  boardHeight,
   boardWidth,
   dotX,
   stringY,
   type Handedness,
   type StringOrder,
 } from '../src/components/fretboard-geometry.js'
+import { withCoarsePointer } from './match-media.js'
 
 const eMajorDots = getFretboardDots(STANDARD_TUNING, {
   mode: 'chord',
@@ -313,6 +316,57 @@ describe('Fretboard', () => {
     expect(w.emitted('tune')).toEqual([[0, 1]])
   })
 
+  it('backs each tuner ± with an invisible square wider than its circle', async () => {
+    const w = mountBoard()
+    const up = w.find('.fb-tuner[data-string="0"] .fb-tuner-up')
+    const hit = up.find('.fb-tuner-hit')
+    const circle = up.find('circle')
+    const num = (el: typeof hit, attr: string) => Number(el.attributes(attr))
+    const [cx, cy, r] = [num(circle, 'cx'), num(circle, 'cy'), num(circle, 'r')]
+    const [x, y, hw, hh] = [
+      num(hit, 'x'),
+      num(hit, 'y'),
+      num(hit, 'width'),
+      num(hit, 'height'),
+    ]
+
+    expect(hw).toBe(GEOM.tunerHit)
+    expect(hw).toBeGreaterThan(2 * r)
+    // centred on the circle, and exactly one string row tall, so the tuner
+    // above it keeps its own taps
+    expect(x + hw / 2).toBeCloseTo(cx)
+    expect(y + hh / 2).toBeCloseTo(cy)
+    expect(hh).toBe(GEOM.stringGap)
+    // and it is the same target: a tap on the square tunes the string
+    await hit.trigger('click')
+    expect(w.emitted('tune')).toEqual([[0, 1]])
+  })
+
+  it('gives the string rows more room on a coarse pointer', () => {
+    const fine = mountBoard()
+    const rows = (w: ReturnType<typeof mountBoard>) => {
+      const ys = w.findAll('.fb-string').map(s => Number(s.attributes('y1')))
+      return Math.abs(ys[1]! - ys[0]!) // bass-bottom counts rows upward
+    }
+    expect(rows(fine)).toBe(GEOM.stringGap)
+
+    withCoarsePointer(() => {
+      const touch = mountBoard()
+      expect(rows(touch)).toBe(GEOM.coarseStringGap)
+      // taller board, same width — the scale the neck renders at is set by the
+      // 640px minimum, so only the rows grow
+      expect(touch.find('svg').attributes('viewBox')).toBe(
+        `0 0 ${boardWidth(12)} ${boardHeight(6, GEOM.coarseStringGap)}`,
+      )
+      expect(Number(touch.find('.fb-cell').attributes('height'))).toBe(GEOM.coarseStringGap)
+      expect(Number(touch.find('.fb-tuner-hit').attributes('height'))).toBe(
+        GEOM.coarseStringGap,
+      )
+    })
+
+    expect(fine.find('svg').attributes('viewBox')).toBe(`0 0 ${boardWidth(12)} ${boardHeight(6)}`)
+  })
+
   it('blanks every label in quiz mode and lets taps fall through the dots', () => {
     const w = mountBoard({ hideLabels: true, passiveDots: true })
     const texts = w.findAll('.fb-dot text').map(t => t.text())
@@ -328,8 +382,25 @@ describe('Fretboard', () => {
   it('rings quiz-reveal marks whether or not a dot sits there', () => {
     const w = mountBoard({ marks: [{ string: 0, fret: 3 }, { string: 5, fret: 1 }] })
     expect(w.findAll('.fb-mark')).toHaveLength(2)
+    // dashed is the default reading of a mark: the answer you missed
+    expect(w.find('.fb-mark').classes()).toContain('fb-mark-reveal')
     expect(mountBoard().findAll('.fb-mark')).toHaveLength(0)
   })
+
+  it.each(['right', 'left'] as const)(
+    'rings the cell a right answer hit, %s-handed',
+    handedness => {
+      const w = mountBoard({ handedness, marks: [{ string: 1, fret: 5, kind: 'hit' }] })
+      const ring = w.get('.fb-mark')
+      expect(ring.classes()).toContain('fb-mark-hit')
+      expect(ring.classes()).not.toContain('fb-mark-reveal')
+      const width = boardWidth(12)
+      expect(Number(ring.attributes('cx'))).toBeCloseTo(dotX(5, handedness, width))
+      expect(Number(ring.attributes('cy'))).toBeCloseTo(
+        stringY(1, STANDARD_TUNING.strings.length, 'bass-bottom'),
+      )
+    },
+  )
 
   it('renders a 7-string tuning without special-casing', () => {
     // Variable string count is a planned post-parity feature; the component

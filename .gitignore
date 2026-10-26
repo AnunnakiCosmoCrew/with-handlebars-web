@@ -1,8 +1,17 @@
 node_modules/
 dist/
+# The App Store screenshot set: derived, large, and only ever needed at the
+# moment of an upload. tools/render-shots.sh is the artifact that is kept.
+assets/screenshots/
 coverage/
 .DS_Store
 *.log
 .env
 .env.*
 *.tsbuildinfo
+# Social cards rendered at build time (HB-155); CI caches the directory.
+.og-cards/
+# Reddit listening digest (HB-162): credentials, run log and digests stay local.
+tools/listen/credentials.json
+tools/listen/state.json
+tools/listen/digests/

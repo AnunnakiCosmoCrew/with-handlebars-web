@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { usePracticeStore, type QuizKind } from '../stores/practice.js'
+import QuizPrompt from './QuizPrompt.vue'
 
 const practice = usePracticeStore()
 
@@ -9,14 +10,6 @@ const KINDS: { id: QuizKind; label: string; hint: string }[] = [
   { id: 'degree', label: 'Find the degree', hint: 'Tap a dot playing the named degree' },
   { id: 'dot', label: 'Name that dot', hint: 'Name the highlighted position' },
 ]
-
-const prompt = computed(() => {
-  const q = practice.question
-  if (!q) return null
-  if (q.kind === 'note') return `Tap any ${q.target} on the neck`
-  if (q.kind === 'degree') return `Tap a dot playing the ${q.target}`
-  return 'Which note is the highlighted dot?'
-})
 
 function pickKind(kind: QuizKind) {
   practice.startQuiz(kind)
@@ -51,51 +44,13 @@ onMounted(() => {
     <p v-if="practice.question === null" class="quiz-line quiz-muted">
       Nothing to quiz here — pick a chord or scale first.
     </p>
-    <template v-else>
-      <p class="quiz-line" data-quiz-prompt aria-live="polite">
-        <strong>{{ prompt }}</strong>
-        <span v-if="practice.feedback === 'right'" class="quiz-right" role="status">
-          Right!
-        </span>
-        <span v-else-if="practice.feedback === 'wrong'" class="quiz-wrong" role="status">
-          <template v-if="practice.question.kind === 'dot'">
-            It was {{ practice.question.answer }}.
-          </template>
-          <template v-else>Not quite — here's where it lives.</template>
-        </span>
-      </p>
-      <div v-if="practice.question.kind === 'dot'" class="quiz-choices">
-        <button
-          v-for="c in practice.question.choices"
-          :key="c"
-          type="button"
-          class="lens-btn quiz-choice"
-          :disabled="practice.feedback !== 'idle'"
-          :data-quiz-choice="c"
-          @click="practice.answerChoice(c)"
-        >
-          {{ c }}
-        </button>
-      </div>
-      <button
-        v-if="practice.feedback === 'wrong'"
-        type="button"
-        class="lens-btn quiz-next"
-        data-quiz-next
-        @click="practice.next()"
-      >
-        Next question
-      </button>
-      <button
-        v-else-if="practice.feedback === 'idle'"
-        type="button"
-        class="lens-btn quiz-skip"
-        data-quiz-skip
-        @click="practice.next()"
-      >
-        Skip
-      </button>
-    </template>
+    <!--
+      The same question the bar under the neck shows. The bar is where a phone
+      answers it; this copy keeps the card readable on its own — and it is the
+      silent one, so the question is announced once, not twice.
+    -->
+    <QuizPrompt v-else context="card" />
+
     <p class="quiz-line quiz-muted">
       Labels hide while a question is open — miss one and the answer lights up.
     </p>
@@ -134,32 +89,6 @@ onMounted(() => {
   font-size: 0.8rem;
 }
 
-.quiz-right {
-  color: var(--hb-good);
-  margin-left: 0.5rem;
-  font-weight: 600;
-}
-
-.quiz-wrong {
-  color: var(--hb-altered);
-  margin-left: 0.5rem;
-}
-
-.quiz-choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.quiz-choice {
-  min-width: 3rem;
-}
-
-.quiz-next,
-.quiz-skip {
-  align-self: flex-start;
-}
-
 .lens-btn {
   padding: 0.3rem 0.6rem;
   font: inherit;
@@ -173,10 +102,5 @@ onMounted(() => {
   background: var(--hb-active-bg);
   border-color: var(--hb-accent);
   color: var(--hb-accent);
-}
-
-.lens-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 </style>

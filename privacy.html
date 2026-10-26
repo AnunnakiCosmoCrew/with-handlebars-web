@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Privacy — With Handlebars</title>
+    <meta
+      name="description"
+      content="With Handlebars collects nothing: no account, no tracking, no analytics, no cookies. Your board settings never leave your device."
+    />
+    <link rel="canonical" href="https://withhandlebars.com/privacy" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Safari's Smart App Banner (HB-145): the app icon and a View / Open button at the
+         top of the page on iPhone and iPad. Safari-only, so it never paints inside the
+         WKWebView. The id is the listing's; test/smart-app-banner.spec.ts keeps the two
+         in step. -->
+    <meta name="apple-itunes-app" content="app-id=6815550767" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f8fa" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101217" />
+    <meta property="og:title" content="Privacy — With Handlebars" />
+    <meta
+      property="og:description"
+      content="With Handlebars collects nothing: no account, no tracking, no analytics, no cookies."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://withhandlebars.com/privacy" />
+    <meta property="og:site_name" content="With Handlebars" />
+    <meta property="og:image" content="https://withhandlebars.com/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The With Handlebars fretboard: every tone of A Pentatonic Minor across a 24-fret neck, each dot coloured by its role in the scale."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://withhandlebars.com/og.png" />
+    <style>
+      .page {
+        /* See src/App.vue: vh first so the iOS 15.0 floor (ADR-0003) still gets
+           a full-height page, dvh for everything from Safari 15.4 on. */
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: var(--hb-safe-top) var(--hb-safe-right) var(--hb-safe-bottom)
+          var(--hb-safe-left);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .room {
+        width: 100%;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 1.5rem 1rem 0;
+        flex: 1;
+      }
+
+      .room-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        width: 26px;
+        height: 26px;
+        flex: none;
+      }
+
+      .brand-text {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .brand h1 {
+        font-size: 1.35rem;
+        letter-spacing: -0.01em;
+        line-height: 1.15;
+        margin: 0;
+      }
+
+      .brand-tag {
+        font-size: 0.72rem;
+        letter-spacing: 0.02em;
+        color: var(--hb-muted);
+      }
+
+      .brand:hover h1 {
+        color: var(--hb-accent);
+      }
+
+      .back {
+        font-size: 0.9rem;
+        color: var(--hb-accent);
+        text-decoration: none;
+      }
+
+      .back:hover {
+        text-decoration: underline;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        letter-spacing: -0.01em;
+        margin: 2.25rem 0 0.75rem;
+      }
+
+      h2:first-of-type {
+        margin-top: 0;
+      }
+
+      p {
+        margin: 0 0 1rem;
+        line-height: 1.65;
+        max-width: 62ch;
+      }
+
+      .lede {
+        font-size: 1.15rem;
+        color: var(--hb-text);
+      }
+
+      .updated {
+        font-size: 0.85rem;
+        color: var(--hb-muted);
+        margin-bottom: 1.75rem;
+      }
+
+      a {
+        color: var(--hb-accent);
+      }
+
+      .what-list {
+        margin: 0 0 1rem;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.7rem;
+        max-width: 62ch;
+      }
+
+      .what-list li {
+        line-height: 1.55;
+        padding-left: 1.1rem;
+        position: relative;
+      }
+
+      .what-list li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.55em;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--hb-accent);
+      }
+
+      .what-list strong {
+        font-weight: 650;
+      }
+
+      .contact {
+        margin-top: 2.5rem;
+        padding: 1.1rem 1.2rem;
+        background: var(--hb-surface);
+        border: 1px solid var(--hb-border);
+        border-radius: 10px;
+      }
+
+      .contact p:last-child {
+        margin-bottom: 0;
+      }
+
+      .site-footer {
+        margin-top: 2.5rem;
+        padding: 1.1rem 1rem 1.4rem;
+        border-top: 1px solid var(--hb-border);
+        text-align: center;
+        color: var(--hb-muted);
+        font-size: 0.85rem;
+      }
+
+      .site-footer p {
+        margin: 0.25rem 0;
+        max-width: none;
+      }
+
+      .site-footer a {
+        color: inherit;
+      }
+
+      .site-footer a.support-link {
+        display: inline-flex;
+        align-items: center;
+        margin-left: 0.35rem;
+        padding: 0.28rem 0.75rem;
+        border: 1px solid var(--hb-border);
+        border-radius: 999px;
+        background: var(--hb-surface);
+        color: var(--hb-accent);
+        text-decoration: none;
+      }
+
+      .site-footer a.support-link:hover,
+      .site-footer a.support-link:focus-visible {
+        border-color: var(--hb-accent);
+      }
+
+      @media (max-width: 640px) {
+        .room-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.4rem;
+        }
+      }
+
+      /* ADR-0003: the app shell carries no external commerce. The pill is
+         hidden by a fact the guard below records before the body is parsed,
+         so it never paints inside the app. A class rather than
+         :has(.support-link) because ADR-0003 sets an iOS 15.0 floor and :has()
+         landed in Safari 15.4. */
+      [data-platform='native'] .site-footer-support {
+        display: none;
+      }
+    </style>
+    <script>
+      // The room asks src/lib/platform.ts; a page of prose ships no module
+      // (ADR-0001, as amended by HB-40), so the same check is inlined here —
+      // no import, no chunk, no request. Capacitor injects its bridge at
+      // document start on every page of the shell, so the answer is already
+      // available this early and the pill never flashes.
+      //
+      // Default-visible, hidden only if native: a visitor with JavaScript off
+      // still gets the whole policy, and inside the WKWebView JavaScript is
+      // guaranteed, so the pill is only ever hidden where it must be.
+      (function () {
+        var cap = window.Capacitor
+        var named = cap && cap.getPlatform && cap.getPlatform()
+        var native =
+          named === 'ios' ||
+          named === 'android' ||
+          !!window.androidBridge ||
+          !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bridge) ||
+          !!(cap && cap.isNativePlatform && cap.isNativePlatform())
+        if (!native) return
+        document.documentElement.dataset.platform = 'native'
+
+        // External links leave for a Safari sheet, not the shell (HB-48). The
+        // twin of src/lib/external-link.ts, inlined for the same reason the
+        // platform check above is: no module on this page. That wrapper
+        // imports the plugin (ADR-0005); with no module to import from, this
+        // page asks the injected bridge for the same call.
+        // ES5 only — ADR-0003 sets an iOS 15.0 floor.
+        document.addEventListener('click', function (event) {
+          if (event.defaultPrevented || event.button) return
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+          // A click is reported against the text node inside the anchor,
+          // which has no closest — climb to an element first.
+          var node = event.target
+          while (node && typeof node.closest !== 'function') node = node.parentNode
+          var anchor = node ? node.closest('a[href]') : null
+          if (!anchor) return
+          // Absolute http(s) to another origin only. mailto: belongs to the
+          // Mail app — a Safari sheet cannot open it — and the room and this
+          // page are the app's own, so they navigate in place.
+          var url
+          try {
+            url = new URL(anchor.getAttribute('href'), window.location.origin)
+          } catch (e) {
+            return
+          }
+          if (url.protocol !== 'http:' && url.protocol !== 'https:') return
+          if (url.origin === window.location.origin) return
+          // Read the bridge at click time, not guard time: the shell installs
+          // its plugins after the page parses.
+          var bridge = window.Capacitor
+          if (!bridge || !bridge.nativePromise) return
+          event.preventDefault()
+          bridge.nativePromise('Browser', 'open', { url: url.href })['catch'](function () {
+            // No plugin, or it refused: fall back to the plain navigation,
+            // which Capacitor turns into its own app-switch to Safari.
+            window.location.href = url.href
+          })
+        })
+      })()
+    </script>
+  </head>
+  <body>
+    <div class="page">
+      <main class="room">
+        <header class="room-header">
+          <a class="brand" href="/">
+            <!-- The brand mark. A static page can't import a component (ADR-0001), so
+                 this copy is kept in step with src/BrandMark.vue by hand. -->
+            <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+              <line x1="4" y1="32" x2="60" y2="32" stroke="var(--hb-board-line)" stroke-width="4" />
+              <line x1="11" y1="10" x2="11" y2="54" stroke="var(--hb-board-line)" stroke-width="6" />
+              <circle cx="30" cy="32" r="11" fill="var(--hb-accent)" />
+              <circle cx="50" cy="32" r="7.5" fill="var(--hb-dot-tone)" />
+            </svg>
+            <div class="brand-text">
+              <h1>With Handlebars</h1>
+              <span class="brand-tag">guitar scales &amp; chords</span>
+            </div>
+          </a>
+          <a class="back" href="/">Open the fretboard →</a>
+        </header>
+
+        <h2>Privacy</h2>
+        <p class="updated">Last updated 7 September 2026.</p>
+        <p class="lede">
+          With Handlebars collects nothing about you. There is no account to make, no
+          tracking, no analytics, no cookies, no advertising, and no third-party SDK
+          watching what you play. That is the whole policy; the rest of this page just
+          says it precisely.
+        </p>
+        <p>
+          This covers the website at withhandlebars.com and the With Handlebars iOS app,
+          which are the same program: the app is the site, packaged to run on your phone.
+        </p>
+
+        <h2>What stays on your device</h2>
+        <p>
+          The board keeps a little state so it looks the way you left it. All of it lives
+          on your own device and none of it is ever sent anywhere.
+        </p>
+        <ul class="what-list">
+          <li>
+            <strong>Your board settings.</strong> Tuning, handedness, fret count, spelling
+            rules, lenses, theme and the rest, stored in your browser&rsquo;s local storage
+            (or the app&rsquo;s own storage on iOS).
+          </li>
+          <li>
+            <strong>The board you&rsquo;re looking at.</strong> The current chord or scale
+            is written into the page&rsquo;s address so any board is a link you can share.
+            The address is yours; we never see the ones you make.
+          </li>
+        </ul>
+        <p>
+          Clearing the site&rsquo;s data in your browser, or deleting the app, removes all
+          of it. There is no copy anywhere else.
+        </p>
+
+        <h2>Sound, and the network</h2>
+        <p>
+          The instrument samples ship with the app, so nothing is fetched while you play.
+          On iOS the app works fully offline and makes no network requests at all — not on
+          launch, not while practising, not ever.
+        </p>
+
+        <h2>The website&rsquo;s host</h2>
+        <p>
+          The website is served by Cloudflare Pages. Like any web host, it records ordinary
+          server request logs — an IP address, a browser user-agent, the file requested —
+          for a short period, to deliver pages and to fend off abuse. We do not read them,
+          build profiles from them, or keep any copy of our own. This applies only to the
+          website; the iOS app talks to no server, so it produces no such logs.
+        </p>
+
+        <h2>Links that leave</h2>
+        <p>
+          The website&rsquo;s footer links out to Ko-fi, to our GitHub repositories, and to
+          the crew&rsquo;s own site. Following one takes you to somebody else&rsquo;s site,
+          under their privacy policy rather than this one. Inside the iOS app the Ko-fi
+          link is not present at all, and the other links open in Safari rather than in the
+          app.
+        </p>
+
+        <h2>Children</h2>
+        <p>
+          We collect no personal information from anyone, which includes children. There is
+          nothing here to consent to.
+        </p>
+
+        <h2>Changes to this policy</h2>
+        <p>
+          If this ever changes — and it would only change by us adding something, since
+          there is nothing to take away — the new text and its date will appear on this
+          page.
+        </p>
+
+        <div class="contact">
+          <h2>Questions</h2>
+          <p>
+            Anything here unclear, or want to know exactly what the app stores? Ask us. The
+            code is open, so the answer can always be checked rather than taken on trust.
+          </p>
+          <p>
+            <a href="mailto:contact@cosmocrew.dev">contact@cosmocrew.dev</a>
+          </p>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <p class="site-footer-support">
+          Do you like With Handlebars?
+          <a class="support-link" href="https://ko-fi.com/cosmocrew" rel="noopener">♥ Support the crew</a>
+        </p>
+        <p>
+          <a href="/">With Handlebars</a> — a
+          <a href="https://cosmocrew.dev/" rel="noopener">CosmoCrew</a>
+          project.
+        </p>
+        <p>
+          <a href="about.html">About</a> · <a href="privacy.html">Privacy</a>
+        </p>
+        <p>
+          Guitar samples from the MusyngKite soundfont via
+          <a href="https://github.com/gleitz/midi-js-soundfonts" rel="noopener"
+            >midi-js-soundfonts</a
+          >
+          (MIT).
+        </p>
+        <!-- Who owns the software, one click away — the same line the room's footer
+             carries, kept word for word. -->
+        <p>
+          © 2026 CosmoCrew — a brand of
+          <a href="https://luvita.tr/" rel="noopener">Luvita Teknoloji Ltd. Şti.</a>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

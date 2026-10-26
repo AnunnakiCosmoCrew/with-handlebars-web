@@ -87,4 +87,12 @@ describe('StaffView', () => {
     // a ghost alone does not dim the inventory
     expect(w.find('.staff-dimmed').exists()).toBe(false)
   })
+
+  it('invites the gesture without naming a mouse', () => {
+    // one build serves the site and the app, so the resting caption cannot
+    // say "click" to a thumb
+    const caption = mountStaff().find('.staff-caption').text()
+    expect(caption).toContain('to pin a pitch')
+    expect(caption.toLowerCase()).not.toContain('click')
+  })
 })

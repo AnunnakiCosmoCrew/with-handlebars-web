@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { isCoarsePointer } from '../../lib/platform.js'
+import { useFloatingPanel } from '../../composables/useFloatingPanel.js'
 
 export type ComboOption = {
   value: string
@@ -39,6 +41,7 @@ const search = ref('')
 const activeIndex = ref(0)
 const rootEl = ref<HTMLElement>()
 const buttonEl = ref<HTMLButtonElement>()
+const panelEl = ref<HTMLElement>()
 const searchEl = ref<HTMLInputElement>()
 const listEl = ref<HTMLElement>()
 
@@ -63,7 +66,12 @@ async function openList() {
   await nextTick()
   const i = props.options.findIndex(o => o.value === props.modelValue)
   activeIndex.value = Math.max(0, i)
-  ;(props.searchable ? searchEl.value : listEl.value)?.focus()
+  // Focus the list rather than the search box on a touch screen: the list is
+  // not editable, so it raises no keyboard over the options the user came to
+  // read (HB-83, UX-03), and it still anchors Escape, the arrow keys — a paired
+  // Bluetooth keyboard, an iPad — and the focusout dismissal path.
+  const focusSearch = props.searchable && !isCoarsePointer()
+  ;(focusSearch ? searchEl.value : listEl.value)?.focus()
   scrollActiveIntoView()
 }
 
@@ -141,9 +149,20 @@ function onButtonKeydown(e: KeyboardEvent) {
   }
 }
 
-function onFocusout(e: FocusEvent) {
-  if (!rootEl.value?.contains(e.relatedTarget as Node)) close(false)
-}
+// Inline mode has no trigger of its own and no floating box: the host owns both
+// the position and the dismissal (see TuningPicker). A second document listener
+// here would fight the host's — a press on the host's trigger is "outside" this
+// component, so we would dismiss and let the click that followed re-open.
+const floating = computed(() => open.value && !props.inline)
+
+// close(false) on purpose: an outside press must not pull focus back to the
+// trigger, which on iOS is what raises the keyboard again.
+const { panelStyle, onFocusout } = useFloatingPanel({
+  open: floating,
+  root: rootEl,
+  panel: panelEl,
+  close: () => close(false),
+})
 </script>
 
 <template>
@@ -164,7 +183,13 @@ function onFocusout(e: FocusEvent) {
       <slot name="button" :selected="selected">{{ display }}</slot>
       <span class="combo-caret" aria-hidden="true">▾</span>
     </button>
-    <div v-if="open || inline" class="combo-panel" :class="{ 'combo-panel-inline': inline }">
+    <div
+      v-if="open || inline"
+      ref="panelEl"
+      class="combo-panel"
+      :class="{ 'combo-panel-inline': inline }"
+      :style="panelStyle"
+    >
       <input
         v-if="searchable"
         ref="searchEl"
@@ -215,10 +240,14 @@ function onFocusout(e: FocusEvent) {
   display: inline-block;
 }
 
+/* One line, always: "Electric Guitar (Jazz)" wrapped to three of them in the
+   playback row on a phone and left the row a head taller than its Play button.
+   The rows that hold combos wrap themselves instead. */
 .combo-button {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  white-space: nowrap;
   padding: 0.4rem 0.7rem;
   font: inherit;
   background: var(--hb-control-bg);
@@ -236,8 +265,12 @@ function onFocusout(e: FocusEvent) {
   position: absolute;
   z-index: 30;
   top: calc(100% + 4px);
-  left: 0;
+  /* The panel grows to its longest option, which overflowed a phone viewport
+     and made WebKit scroll the whole document sideways (HB-83, UX-02). The cap
+     bounds it; the measured shift slides whatever is left back on screen. */
+  left: var(--hb-panel-shift, 0px);
   min-width: max(100%, 14rem);
+  max-width: var(--hb-panel-max-width);
   background: var(--hb-surface);
   border: 1px solid var(--hb-border);
   border-radius: 8px;
@@ -245,8 +278,12 @@ function onFocusout(e: FocusEvent) {
   padding: 0.4rem;
 }
 
+/* Inline lives inside a host's panel, which does its own clamping — undo the cap
+   here, or the content would be capped twice. Static positioning ignores the
+   inset, so the shift needs no undoing. */
 .combo-panel-inline {
   position: static;
+  max-width: none;
   box-shadow: none;
   border: none;
   padding: 0;
@@ -262,18 +299,28 @@ function onFocusout(e: FocusEvent) {
   border-radius: 6px;
 }
 
+/* The list is what scrolls, not the panel, so the search field stays pinned
+   and there is only ever one scroller. The viewport clause matters on a phone
+   held sideways: 16rem of options below a control row runs off a 390pt-tall
+   screen with nothing to drag. vh line then dvh line, as elsewhere — ADR-0003
+   floors iOS at 15.0 and dvh landed in Safari 15.4. */
 .combo-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 16rem;
+  max-height: min(16rem, calc(100vh - 11rem));
+  max-height: min(16rem, calc(100dvh - 11rem));
   overflow-y: auto;
+  overscroll-behavior: contain;
   outline: none;
 }
 
+/* Centred, not baseline-aligned: on a coarse pointer the row is held open to
+   the tap minimum (see style.css), and a baseline pins its text to the top of
+   whatever height the row ends up with. */
 .combo-option {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.5rem;
   padding: 0.35rem 0.5rem;
   border-radius: 6px;

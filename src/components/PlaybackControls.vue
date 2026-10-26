@@ -101,9 +101,12 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* Wraps, now that the instrument name is kept on one line: on a narrow phone
+   the speed slider drops to a second row rather than squeezing the combo. */
 .playback {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.6rem;
 }
 

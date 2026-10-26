@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { PRACTICE_TABS, type PracticeTab } from '../lib/url-state.js'
 import { METERS, SUBDIVISIONS, TEMPO_MAX, TEMPO_MIN, meterOf } from '../audio/practice.js'
+import { haptics, hapticsAvailable, hapticsEnabled } from '../lib/haptics.js'
 import { useRoomStore } from '../stores/room.js'
 import { usePracticeStore } from '../stores/practice.js'
 import QuizPractice from './QuizPractice.vue'
@@ -17,6 +18,17 @@ const TAB_LABELS: Record<Exclude<PracticeTab, 'off'>, string> = {
   progression: 'Progression',
 }
 const tabs = PRACTICE_TABS.filter((t): t is Exclude<PracticeTab, 'off'> => t !== 'off')
+
+// Only the app can buzz, so the website never draws the control. The platform
+// cannot change under a running page, so this is a plain const — the same
+// reasoning as `showSupportLink` in App.vue.
+const showHaptics = hapticsAvailable()
+
+function toggleHaptics() {
+  hapticsEnabled.value = !hapticsEnabled.value
+  // Answer the tap with the thing being switched on, so you feel what you got.
+  if (hapticsEnabled.value) haptics.accent()
+}
 
 // Clicking the open tab closes the panel — the tabs are the whole switch.
 function setTab(tab: Exclude<PracticeTab, 'off'>) {
@@ -142,6 +154,20 @@ const beatDots = computed(() => {
           >
             Tap
           </button>
+          <template v-if="showHaptics">
+            <span class="audio-sep" />
+            <button
+              type="button"
+              class="lens-btn"
+              :class="{ 'lens-btn-active': hapticsEnabled }"
+              :aria-pressed="hapticsEnabled"
+              data-haptics
+              title="Vibrate on quiz answers and on the downbeat"
+              @click="toggleHaptics()"
+            >
+              Buzz
+            </button>
+          </template>
         </fieldset>
 
         <fieldset class="audio-group">
@@ -281,7 +307,7 @@ const beatDots = computed(() => {
 }
 
 .lens-btn {
-  min-width: 2.1rem;
+  min-width: var(--hb-chip-min);
   padding: 0.3rem 0.6rem;
   font: inherit;
   background: var(--hb-control-bg);

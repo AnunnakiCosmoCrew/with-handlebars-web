@@ -92,7 +92,7 @@ const strings = computed(() =>
 }
 
 .lens-btn {
-  min-width: 2.1rem;
+  min-width: var(--hb-chip-min);
   padding: 0.3rem 0.5rem;
   font: inherit;
   background: var(--hb-control-bg);

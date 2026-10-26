@@ -18,6 +18,7 @@ import {
   type MeterId,
   type Subdivision,
 } from '../audio/practice.js'
+import { boardFromPath, boardPath, type Board } from './board-path.js'
 
 /**
  * Serializable room state. The URL carries only non-default values so links
@@ -321,4 +322,52 @@ export function buildQuery(state: RoomState): string {
   // The overlay only means anything while a scale is selected.
   if (state.mode === 'scale' && state.overlay) q.set('overlay', state.overlay)
   return q.toString()
+}
+
+/** The query keys a board path names; on a board path the path carries them instead. */
+const BOARD_KEYS = ['root', 'chord', 'scale', 'tuning']
+
+/** The query for everything but the board itself: lenses, display, practice, audio. */
+export function buildLensQuery(state: RoomState): string {
+  const q = new URLSearchParams(buildQuery(state))
+  for (const key of BOARD_KEYS) q.delete(key)
+  return q.toString()
+}
+
+/**
+ * Parse a location into the state fields it validly specifies. A board path
+ * (HB-153) names the board, and the query adds the rest; on any other path the
+ * query is the whole state, as it always was.
+ */
+export function parseLocation(pathname: string, search: string): Partial<RoomState> {
+  const board = boardFromPath(pathname)
+  return { ...parseQuery(search), ...(board ? boardState(board) : {}) }
+}
+
+/**
+ * Where a state lives: its board path with the rest as a query when the board
+ * has a page (ADR-0009: ranking state in paths), otherwise `roomPath` with the
+ * whole state in the query.
+ */
+export function stateLocation(state: RoomState, roomPath = '/'): string {
+  const path = boardPath(boardOf(state))
+  const query = path ? buildLensQuery(state) : buildQuery(state)
+  const at = path ?? roomPath
+  return query ? `${at}?${query}` : at
+}
+
+/** The board a room state shows. */
+export function boardOf(state: RoomState): Board {
+  return {
+    tuningId: state.tuningId,
+    root: state.root,
+    mode: state.mode,
+    typeId: state.mode === 'chord' ? state.chordId : state.scaleId,
+  }
+}
+
+/** The room-state fields a board sets. */
+export function boardState(board: Board): Partial<RoomState> {
+  const type = board.mode === 'chord' ? { chordId: board.typeId } : { scaleId: board.typeId }
+  return { tuningId: board.tuningId, root: board.root, mode: board.mode, ...type }
 }

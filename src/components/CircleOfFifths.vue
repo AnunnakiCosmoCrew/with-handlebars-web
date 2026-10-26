@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { CIRCLE_OF_FIFTHS, formatNote } from '@anunnakicosmocrew/handlebars'
 import { useRoomStore } from '../stores/room.js'
+import { useMediaQuery } from '../lib/media.js'
 import { clefBaseline, clefSize } from './staff-geometry.js'
 
 const store = useRoomStore()
@@ -95,6 +96,24 @@ const segments = computed(() =>
   }),
 )
 
+/**
+ * The wheel is `min(470px, 94vw)`, so 470 / 0.94 = 500 px of viewport is the
+ * last width at which it draws full size; below that it shrinks with the
+ * screen, and on a phone it lands near 380 px. That is where the mini staves
+ * stop being information and become ink — their 4-unit line gaps render around
+ * 3 px — so they go, and the viewBox tightens onto the wedges to spend the
+ * width they were reserving, which is what enlarges the names (UX-10).
+ */
+const compact = useMediaQuery(`(max-width: ${Math.floor(SIZE / 0.94)}px)`)
+
+// Radius the wedges occupy, plus a hair of margin, centred on the wheel.
+const TIGHT_R = R_OUTER + 8
+const viewBox = computed(() =>
+  compact.value
+    ? `${CX - TIGHT_R} ${CY - TIGHT_R} ${TIGHT_R * 2} ${TIGHT_R * 2}`
+    : `0 0 ${SIZE} ${SIZE}`,
+)
+
 // The center names the key the selection sits on, on its ring.
 const centerLabel = computed(() => {
   const key = CIRCLE_OF_FIFTHS[store.circlePos.index]
@@ -109,9 +128,10 @@ const centerLabel = computed(() => {
   <section v-if="store.circle === 'show'" class="circle-panel" aria-label="Circle of fifths">
     <svg
       class="circle-svg"
-      :viewBox="`0 0 ${SIZE} ${SIZE}`"
+      :class="{ 'circle-compact': compact }"
+      :viewBox="viewBox"
       role="group"
-      aria-label="Circle of fifths — click a key to select it"
+      aria-label="Circle of fifths — choose a key"
     >
       <g
         v-for="s in segments"
@@ -150,37 +170,40 @@ const centerLabel = computed(() => {
         <path :d="s.minorPath" />
         <text class="cof-minor" :x="s.minorX" :y="s.minorY + 3.5">{{ s.minorLabel }}</text>
       </g>
-      <!-- notated key signatures on tiny treble staffs, outside the wedges -->
-      <g
-        v-for="s in segments"
-        :key="`sig-${s.index}`"
-        class="cof-signature"
-        :data-circle-sig="s.index"
-        :transform="`translate(${s.sigStaffX} ${s.sigStaffY})`"
-        aria-hidden="true"
-      >
-        <line
-          v-for="i in 5"
-          :key="`sl-${i}`"
-          class="cof-staff-line"
-          :x1="-24"
-          :x2="24"
-          :y1="-2 * STAFF_GAP + (i - 1) * STAFF_GAP"
-          :y2="-2 * STAFF_GAP + (i - 1) * STAFF_GAP"
-        />
-        <!-- anchored at the start, so x is the ink's left edge and the clef
-             ends just clear of the accidental columns -->
-        <text class="cof-clef" x="-21" :y="CLEF_Y" :font-size="CLEF_SIZE">𝄞</text>
-        <text
-          v-for="(acc, i) in s.accidentals"
-          :key="`acc-${i}`"
-          class="cof-acc"
-          :x="acc.x"
-          :y="acc.y"
+      <!-- notated key signatures on tiny treble staffs, outside the wedges —
+           dropped on a phone, where they are too small to read (UX-10) -->
+      <template v-if="!compact">
+        <g
+          v-for="s in segments"
+          :key="`sig-${s.index}`"
+          class="cof-signature"
+          :data-circle-sig="s.index"
+          :transform="`translate(${s.sigStaffX} ${s.sigStaffY})`"
+          aria-hidden="true"
         >
-          {{ acc.glyph }}
-        </text>
-      </g>
+          <line
+            v-for="i in 5"
+            :key="`sl-${i}`"
+            class="cof-staff-line"
+            :x1="-24"
+            :x2="24"
+            :y1="-2 * STAFF_GAP + (i - 1) * STAFF_GAP"
+            :y2="-2 * STAFF_GAP + (i - 1) * STAFF_GAP"
+          />
+          <!-- anchored at the start, so x is the ink's left edge and the clef
+               ends just clear of the accidental columns -->
+          <text class="cof-clef" x="-21" :y="CLEF_Y" :font-size="CLEF_SIZE">𝄞</text>
+          <text
+            v-for="(acc, i) in s.accidentals"
+            :key="`acc-${i}`"
+            class="cof-acc"
+            :x="acc.x"
+            :y="acc.y"
+          >
+            {{ acc.glyph }}
+          </text>
+        </g>
+      </template>
       <text class="cof-center" :x="CX" :y="CY + 5" data-circle-center>{{ centerLabel }}</text>
     </svg>
   </section>
@@ -250,6 +273,12 @@ const centerLabel = computed(() => {
 .cof-sig {
   font-size: 9.5px;
   fill: var(--hb-muted);
+}
+
+/* The tight viewBox already enlarges every glyph by about a third; the inner
+   ring starts smallest and gets a little extra on top of that. */
+.circle-compact .cof-minor {
+  font-size: 13px;
 }
 
 .cof-active text {
